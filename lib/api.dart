@@ -19,6 +19,7 @@ class QueroApi {
 
   final http.Client _client;
   final String? _rootOverride;
+  String? token;
 
   String get root {
     final override = _rootOverride;
@@ -31,30 +32,92 @@ class QueroApi {
     return 'http://127.0.0.1:47231';
   }
 
+  Map<String, String> get authHeaders {
+    final current = token;
+    if (current == null || current.isEmpty) return const {};
+    return {'authorization': 'Bearer $current'};
+  }
+
   String imageProxy(WishItem item) {
     final version = item.updatedAt.millisecondsSinceEpoch;
     return '$root/api/items/${item.id}/image?v=$version';
   }
 
-  Future<WishlistSnapshot> listItems() async {
-    final response = await _send('GET', '/api/items');
-    final body = _jsonMap(response);
-    final rawItems = body['items'];
-    final items = <WishItem>[];
-    if (rawItems is List) {
-      for (final entry in rawItems) {
-        if (entry is Map<String, dynamic>) {
-          items.add(WishItem.fromJson(entry));
-        } else if (entry is Map) {
-          items.add(WishItem.fromJson(Map<String, dynamic>.from(entry)));
-        }
-      }
-    }
-    return WishlistSnapshot(items: items, unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0);
+  String sharedImageProxy(String shareToken, WishItem item) {
+    final version = item.updatedAt.millisecondsSinceEpoch;
+    return '$root/api/share/$shareToken/items/${item.id}/image?v=$version';
   }
 
-  Future<WishItem> createItem({required String name, required String url}) async {
-    final response = await _send('POST', '/api/items', {'name': name, 'url': url});
+  String shareLink(String shareToken) {
+    final base = Uri.base;
+    final path = base.path.isEmpty ? '/' : (base.path.endsWith('/') ? base.path : '${base.path}/');
+    return '${base.scheme}://${base.authority}$path#/l/$shareToken';
+  }
+
+  Future<UserAccount> register({required String email, required String password}) async {
+    final response = await _send('POST', '/api/auth/register', {'email': email, 'password': password});
+    return _storeSession(response);
+  }
+
+  Future<UserAccount> login({required String email, required String password}) async {
+    final response = await _send('POST', '/api/auth/login', {'email': email, 'password': password});
+    return _storeSession(response);
+  }
+
+  UserAccount _storeSession(http.Response response) {
+    final body = _jsonMap(response);
+    token = body['token'] as String;
+    return UserAccount.fromJson(body['user'] as Map<String, dynamic>);
+  }
+
+  Future<UserAccount> me() async {
+    final response = await _send('GET', '/api/auth/me');
+    return UserAccount.fromJson(_jsonMap(response));
+  }
+
+  Future<List<WishList>> lists() async {
+    final response = await _send('GET', '/api/lists');
+    return _lists(_jsonMap(response)['lists']);
+  }
+
+  Future<WishList> createList(String name) async {
+    final response = await _send('POST', '/api/lists', {'name': name});
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> renameList(String id, String name) async {
+    final response = await _send('PATCH', '/api/lists/$id', {'name': name});
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<void> deleteList(String id) async {
+    await _send('DELETE', '/api/lists/$id');
+  }
+
+  Future<WishList> shareList(String id) async {
+    final response = await _send('POST', '/api/lists/$id/share');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> regenerateShare(String id) async {
+    final response = await _send('POST', '/api/lists/$id/share/regenerate');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> revokeShare(String id) async {
+    final response = await _send('DELETE', '/api/lists/$id/share');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishlistSnapshot> listItems(String listId) async {
+    final response = await _send('GET', '/api/lists/$listId/items');
+    final body = _jsonMap(response);
+    final title = (body['list'] as Map?)?['name'] as String?;
+    return WishlistSnapshot(items: _items(body['items']), unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0, title: title);
+  }
+
+  Future<WishItem> createItem({required String listId, required String name, required String url}) async {
+    final response = await _send('POST', '/api/lists/$listId/items', {'name': name, 'url': url});
     return WishItem.fromJson(_jsonMap(response));
   }
 
@@ -93,9 +156,63 @@ class QueroApi {
     await _send('DELETE', '/api/items/$id');
   }
 
-  Future<http.Response> _send(String method, String path, [Object? body]) async {
+  Future<void> clearOwnedReservation(String id) async {
+    await _send('DELETE', '/api/items/$id/reservation');
+  }
+
+  Future<WishlistSnapshot> sharedList(String shareToken, {String? claims}) async {
+    final response = await _send('GET', '/api/share/$shareToken', null, {
+      if (claims != null && claims.isNotEmpty) 'x-claims': claims,
+    });
+    final body = _jsonMap(response);
+    return WishlistSnapshot(items: _items(body['items']), unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0, title: (body['list'] as Map?)?['name'] as String?);
+  }
+
+  Future<String> reserve(String shareToken, String itemId, {String? name}) async {
+    final response = await _send('POST', '/api/share/$shareToken/items/$itemId/reservation', {'name': name ?? ''});
+    return _jsonMap(response)['claim_token'] as String;
+  }
+
+  Future<void> clearReservation(String shareToken, String itemId, String claimToken) async {
+    await _send('DELETE', '/api/share/$shareToken/items/$itemId/reservation', null, {'x-claim-token': claimToken});
+  }
+
+  List<WishList> _lists(dynamic raw) {
+    final lists = <WishList>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map<String, dynamic>) {
+          lists.add(WishList.fromJson(entry));
+        } else if (entry is Map) {
+          lists.add(WishList.fromJson(Map<String, dynamic>.from(entry)));
+        }
+      }
+    }
+    return lists;
+  }
+
+  List<WishItem> _items(dynamic raw) {
+    final items = <WishItem>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map<String, dynamic>) {
+          items.add(WishItem.fromJson(entry));
+        } else if (entry is Map) {
+          items.add(WishItem.fromJson(Map<String, dynamic>.from(entry)));
+        }
+      }
+    }
+    return items;
+  }
+
+  Future<http.Response> _send(String method, String path, [Object? body, Map<String, String>? headers]) async {
     final uri = Uri.parse('$root$path');
     final request = http.Request(method, uri)..headers['accept'] = 'application/json';
+    final current = token;
+    if (current != null && current.isNotEmpty) {
+      request.headers['authorization'] = 'Bearer $current';
+    }
+    if (headers != null) request.headers.addAll(headers);
     if (body != null) {
       request.headers['content-type'] = 'application/json; charset=utf-8';
       request.body = jsonEncode(body);

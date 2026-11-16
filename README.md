@@ -34,7 +34,13 @@ flutter build ios --dart-define=API_BASE=https://seu-servidor.example
 
 To serve the web build from the API, point `QUERO_WEB_DIR` at `build/web` and leave `API_BASE` unset for that build.
 
+The web app uses hash routes so a refresh on GitHub Pages still opens the page. A shared list is `https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/<token>`.
+
 ## What you can do
+
+- Criar conta and Entrar with e-mail and password. The session stays on this device until Sair.
+- Create, rename, and delete lists. Items belong to one list.
+- Share a list. Anyone with the link can look, without an account, and mark **Reservar / Já comprei** so two people don’t buy the same gift. The owner can copy, regenerate, or revoke the link.
 
 - Add an item with a name and a product URL. The card shows the photo and the price the API found.
 - See the list and a total. Amounts in BRL use `R$ 1.299,90`. Other currencies keep their own code.

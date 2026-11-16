@@ -11,6 +11,10 @@ class WishItem {
     this.currency,
     this.store,
     this.message,
+    this.listId,
+    this.reserved = false,
+    this.reservedLabel,
+    this.reservedByMe = false,
   });
 
   final String id;
@@ -22,6 +26,10 @@ class WishItem {
   final String? store;
   final String status;
   final String? message;
+  final String? listId;
+  final bool reserved;
+  final String? reservedLabel;
+  final bool reservedByMe;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -38,6 +46,10 @@ class WishItem {
       store: json['store'] as String?,
       status: (json['status'] as String?) ?? 'failed',
       message: json['message'] as String?,
+      listId: json['list_id'] as String?,
+      reserved: json['reserved'] == true,
+      reservedLabel: json['reserved_label'] as String?,
+      reservedByMe: json['reserved_by_me'] == true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -52,10 +64,11 @@ class MoneyTotal {
 }
 
 class WishlistSnapshot {
-  const WishlistSnapshot({required this.items, required this.unpricedCount});
+  const WishlistSnapshot({required this.items, required this.unpricedCount, this.title});
 
   final List<WishItem> items;
   final int unpricedCount;
+  final String? title;
 
   List<MoneyTotal> get totals {
     final buckets = <String, double>{};
@@ -73,6 +86,58 @@ class WishlistSnapshot {
         return a.compareTo(b);
       });
     return [for (final key in keys) MoneyTotal(key, buckets[key]!)];
+  }
+}
+
+class UserAccount {
+  const UserAccount({required this.id, required this.email});
+
+  final String id;
+  final String email;
+
+  factory UserAccount.fromJson(Map<String, dynamic> json) {
+    return UserAccount(id: json['id'] as String, email: json['email'] as String);
+  }
+}
+
+class WishList {
+  const WishList({
+    required this.id,
+    required this.name,
+    required this.itemCount,
+    required this.unpricedCount,
+    required this.totals,
+    this.shareToken,
+    this.sharePath,
+  });
+
+  final String id;
+  final String name;
+  final String? shareToken;
+  final String? sharePath;
+  final int itemCount;
+  final int unpricedCount;
+  final List<MoneyTotal> totals;
+
+  factory WishList.fromJson(Map<String, dynamic> json) {
+    final rawTotals = json['totals'];
+    final totals = <MoneyTotal>[];
+    if (rawTotals is List) {
+      for (final entry in rawTotals) {
+        if (entry is Map) {
+          totals.add(MoneyTotal((entry['currency'] as String?) ?? '', _asDouble(entry['amount']) ?? 0));
+        }
+      }
+    }
+    return WishList(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      shareToken: json['share_token'] as String?,
+      sharePath: json['share_path'] as String?,
+      itemCount: (json['item_count'] as num?)?.toInt() ?? 0,
+      unpricedCount: (json['unpriced_count'] as num?)?.toInt() ?? 0,
+      totals: totals,
+    );
   }
 }
 

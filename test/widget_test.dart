@@ -1,11 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:quero/api.dart';
 import 'package:quero/main.dart';
 import 'package:quero/money.dart';
+import 'package:quero/session.dart';
 
 void main() {
   test('formata real e dólar', () {
@@ -21,16 +18,12 @@ void main() {
     expect(parseUserPrice(''), null);
   });
 
-  testWidgets('mostra a lista vazia', (tester) async {
-    final api = QueroApi(
-      root: 'http://test.local',
-      client: MockClient((request) async {
-        return http.Response(jsonEncode({'items': [], 'totals': [], 'unpriced_count': 0}), 200);
-      }),
+  testWidgets('mostra entrar e criar conta', (tester) async {
+    await tester.pumpWidget(
+      QueroApp(api: QueroApi(root: 'http://test.local'), tokens: MemoryTokenStore(), claims: MemoryClaimStore()),
     );
-    await tester.pumpWidget(QueroApp(api: api));
     await tester.pumpAndSettle();
-    expect(find.text('Quero'), findsWidgets);
-    expect(find.text('Nada por aqui ainda'), findsOneWidget);
+    expect(find.text('Entrar'), findsWidgets);
+    expect(find.text('Não tem conta? Criar conta'), findsOneWidget);
   });
 }

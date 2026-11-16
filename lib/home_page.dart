@@ -1,53 +1,65 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart';
 import 'models.dart';
 import 'money.dart';
+import 'session.dart';
 import 'theme.dart';
 import 'widgets/add_form.dart';
 import 'widgets/edit_dialog.dart';
 import 'widgets/item_card.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.api});
+class ListDetailPage extends StatefulWidget {
+  const ListDetailPage({super.key, required this.listId});
 
-  final QueroApi api;
+  final String listId;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<ListDetailPage> createState() => _ListDetailPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ListDetailPageState extends State<ListDetailPage> {
+  WishList? _list;
   List<WishItem> _items = [];
   bool _loading = true;
   String? _error;
   String? _busyId;
-  int _ticket = 0;
+
+  var _started = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
     _load();
   }
 
-  WishlistSnapshot get _snapshot => WishlistSnapshot(items: _items, unpricedCount: _items.where((item) => item.price == null).length);
+  WishlistSnapshot get _snapshot => WishlistSnapshot(items: _items, unpricedCount: _items.where((item) => item.price == null).length, title: _list?.name);
 
   Future<void> _load() async {
-    final ticket = ++_ticket;
     setState(() {
       _loading = _items.isEmpty;
       _error = null;
     });
     try {
-      final snapshot = await widget.api.listItems();
-      if (!mounted || ticket != _ticket) return;
+      final snapshot = await SessionScope.of(context).api.listItems(widget.listId);
+      if (!mounted) return;
+      final lists = await SessionScope.of(context).api.lists();
+      if (!mounted) return;
       setState(() {
         _items = snapshot.items;
+        WishList? match;
+        for (final candidate in lists) {
+          if (candidate.id == widget.listId) match = candidate;
+        }
+        _list = match;
         _loading = false;
       });
     } on ApiException catch (error) {
-      if (!mounted || ticket != _ticket) return;
+      if (!mounted) return;
       setState(() {
         _error = error.message;
         _loading = false;
@@ -56,29 +68,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _insert(WishItem item) {
-    setState(() {
-      _items = [item, ..._items.where((current) => current.id != item.id)];
-      _error = null;
-      _loading = false;
-    });
-    final message = item.status == 'ok' ? '${item.name} entrou na lista.' : (item.message ?? 'Item salvo. Complete a foto ou o preço se precisar.');
+    setState(() => _items = [item, ..._items.where((current) => current.id != item.id)]);
+    final message = item.status == 'ok' ? '${item.name} entrou na lista.' : (item.message ?? 'Item salvo.');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _replace(WishItem item) {
-    setState(() {
-      _items = [for (final current in _items) current.id == item.id ? item : current];
-    });
+    setState(() => _items = [for (final current in _items) current.id == item.id ? item : current]);
   }
 
   Future<void> _refresh(WishItem item) async {
     setState(() => _busyId = item.id);
     try {
-      final updated = await widget.api.refreshItem(item.id);
+      final updated = await SessionScope.of(context).api.refreshItem(item.id);
       if (!mounted) return;
       _replace(updated);
-      final message = updated.message ?? 'Foto e preço atualizados.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -88,7 +92,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _edit(WishItem item) async {
-    final updated = await showEditDialog(context, api: widget.api, item: item);
+    final updated = await showEditDialog(context, api: SessionScope.of(context).api, item: item);
     if (updated != null) _replace(updated);
   }
 
@@ -102,13 +106,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _delete(WishItem item) async {
-    final confirmed = await showDialog<bool>(
+    final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Excluir este item?', style: fraunces(26)),
-        content: Text('“${item.name}” sai da lista. A página da loja não muda.'),
+        title: Text('Excluir este item?', style: fraunces(24)),
+        content: Text('“${item.name}” sai da lista.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(
@@ -119,298 +122,310 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    setState(() => _busyId = item.id);
+    if (yes != true || !mounted) return;
     try {
-      await widget.api.deleteItem(item.id);
+      await SessionScope.of(context).api.deleteItem(item.id);
       if (!mounted) return;
       setState(() => _items = _items.where((current) => current.id != item.id).toList());
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-    } finally {
-      if (mounted) setState(() => _busyId = null);
     }
   }
 
-  void _openAddSheet() {
-    showModalBottomSheet<void>(
+  Future<void> _clearReservation(WishItem item) async {
+    try {
+      await SessionScope.of(context).api.clearOwnedReservation(item.id);
+      if (!mounted) return;
+      _replace(WishItem(
+        id: item.id,
+        name: item.name,
+        url: item.url,
+        status: item.status,
+        createdAt: item.createdAt,
+        updatedAt: DateTime.now(),
+        imageUrl: item.imageUrl,
+        price: item.price,
+        currency: item.currency,
+        store: item.store,
+        message: item.message,
+        listId: item.listId,
+      ));
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _share() async {
+    final api = SessionScope.of(context).api;
+    var list = _list;
+    if (list == null) return;
+    if (list.shareToken == null) {
+      try {
+        list = await api.shareList(list.id);
+        if (!mounted) return;
+        setState(() => _list = list);
+      } on ApiException catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      }
+    }
+    if (!mounted || list.shareToken == null) return;
+    final link = api.shareLink(list.shareToken!);
+    await showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: QueroColors.paper,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 42, height: 4, decoration: BoxDecoration(color: QueroColors.line, borderRadius: BorderRadius.circular(4))),
-                const SizedBox(height: 18),
-                AddPanel(
-                  api: widget.api,
-                  onCreated: (item) {
-                    Navigator.of(context).pop();
-                    _insert(item);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 980;
-        if (wide) {
-          return Scaffold(
-            backgroundColor: QueroColors.paper,
-            body: Row(
-              children: [
-                SizedBox(width: 380, child: _Sidebar(api: widget.api, snapshot: _snapshot, onCreated: _insert)),
-                Expanded(child: _Board(state: this, wide: true)),
-              ],
-            ),
-          );
-        }
-        return Scaffold(
-          backgroundColor: QueroColors.paper,
-          body: Column(
-            children: [
-              _MobileBar(onReload: _load),
-              Expanded(child: _Board(state: this, wide: false)),
-            ],
-          ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: FilledButton(
-                onPressed: _openAddSheet,
-                style: FilledButton.styleFrom(
-                  backgroundColor: QueroColors.accent,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('Adicionar item', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.api, required this.snapshot, required this.onCreated});
-
-  final QueroApi api;
-  final WishlistSnapshot snapshot;
-  final ValueChanged<WishItem> onCreated;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: QueroColors.ink,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Quero', style: fraunces(48, style: FontStyle.italic, color: QueroColors.cream, weight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              const Text(
-                'O que você quer comprar, num lugar só.',
-                style: TextStyle(color: Color(0xFFD7CDC2), fontSize: 16, height: 1.35),
-              ),
-              const SizedBox(height: 28),
-              Expanded(
-                child: SingleChildScrollView(child: AddPanel(api: api, onDark: true, onCreated: onCreated)),
-              ),
-              const SizedBox(height: 18),
-              _TotalBlock(snapshot: snapshot, onDark: true),
-            ],
-          ),
+      builder: (context) => AlertDialog(
+        backgroundColor: QueroColors.cream,
+        title: Text('Compartilhar', style: fraunces(26)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Quem abrir o link vê a lista e pode marcar “Já comprei”, sem entrar na sua conta.'),
+            const SizedBox(height: 12),
+            SelectableText(link, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class _MobileBar extends StatelessWidget {
-  const _MobileBar({required this.onReload});
-
-  final VoidCallback onReload;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: QueroColors.ink,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Quero', style: fraunces(32, style: FontStyle.italic, color: QueroColors.cream)),
-                    const SizedBox(height: 2),
-                    const Text('Lista de desejos', style: TextStyle(color: Color(0xFFD7CDC2), fontSize: 14)),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: onReload,
-                color: QueroColors.cream,
-                tooltip: 'Recarregar',
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: link));
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Copiar'),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Board extends StatelessWidget {
-  const _Board({required this.state, required this.wide});
-
-  final _HomePageState state;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = state._items;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(wide ? 28 : 16, wide ? 28 : 16, wide ? 28 : 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text('Sua lista', style: fraunces(wide ? 36 : 28)),
-              const Spacer(),
-              Text(
-                items.length == 1 ? '1 item' : '${items.length} itens',
-                style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
-              ),
-              if (wide)
-                IconButton(onPressed: state._load, tooltip: 'Recarregar', icon: const Icon(Icons.refresh), color: QueroColors.ink),
-            ],
+          TextButton(
+            onPressed: () async {
+              final updated = await api.regenerateShare(list!.id);
+              if (!context.mounted) return;
+              setState(() => _list = updated);
+              Navigator.pop(context);
+            },
+            child: const Text('Gerar novo'),
           ),
-          const SizedBox(height: 6),
-          if (!wide) _TotalBlock(snapshot: state._snapshot, onDark: false),
-          const SizedBox(height: 12),
-          Expanded(child: _body(context)),
+          TextButton(
+            onPressed: () async {
+              final updated = await api.revokeShare(list!.id);
+              if (!context.mounted) return;
+              setState(() => _list = updated);
+              Navigator.pop(context);
+            },
+            child: const Text('Revogar', style: TextStyle(color: QueroColors.danger)),
+          ),
         ],
       ),
     );
   }
 
-  Widget _body(BuildContext context) {
-    if (state._loading) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: QueroColors.ink),
-            SizedBox(height: 14),
-            Text('Carregando sua lista…', style: TextStyle(color: QueroColors.muted)),
-          ],
-        ),
-      );
-    }
-    if (state._error != null && state._items.isEmpty) {
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  @override
+  Widget build(BuildContext context) {
+    final api = SessionScope.of(context).api;
+    final name = _list?.name ?? _snapshot.title ?? 'Lista';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 980;
+        final board = _Board(
+          title: name,
+          items: _items,
+          loading: _loading,
+          error: _error,
+          busyId: _busyId,
+          wide: wide,
+          snapshot: _snapshot,
+          api: api,
+          onBack: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
+          onShare: _share,
+          onReload: _load,
+          onRefresh: _refresh,
+          onEdit: _edit,
+          onOpen: _open,
+          onDelete: _delete,
+          onUnreserve: _clearReservation,
+        );
+        if (!wide) {
+          return Scaffold(
+            backgroundColor: QueroColors.paper,
+            body: board,
+            bottomNavigationBar: _list == null
+                ? null
+                : SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: _AddButton(onPressed: () => _openAdd(api)),
+                    ),
+                  ),
+          );
+        }
+        return Scaffold(
+          backgroundColor: QueroColors.paper,
+          body: Row(
             children: [
-              Text(state._error!, textAlign: TextAlign.center, style: const TextStyle(height: 1.4)),
-              const SizedBox(height: 14),
-              OutlinedButton(onPressed: state._load, child: const Text('Tentar de novo')),
+              SizedBox(
+                width: 380,
+                child: ColoredBox(
+                  color: QueroColors.ink,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextButton(onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false), child: const Text('← Suas listas', style: TextStyle(color: QueroColors.cream))),
+                          Text(name, style: fraunces(40, color: QueroColors.cream)),
+                          const SizedBox(height: 18),
+                          if (_list != null) Expanded(child: SingleChildScrollView(child: AddPanel(api: api, listId: _list!.id, onDark: true, onCreated: _insert))),
+                          _TotalBlock(snapshot: _snapshot, onDark: true),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(child: board),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAdd(QueroApi api) async {
+    final list = _list;
+    if (list == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: QueroColors.paper,
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+        child: AddPanel(
+          api: api,
+          listId: list.id,
+          onCreated: (item) {
+            Navigator.pop(context);
+            _insert(item);
+          },
         ),
-      );
-    }
-    if (state._items.isEmpty) {
-      return const _Empty();
-    }
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  const _AddButton({required this.onPressed});
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+      child: const Text('Adicionar item', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+    );
+  }
+}
+
+class _Board extends StatelessWidget {
+  const _Board({
+    required this.title,
+    required this.items,
+    required this.loading,
+    required this.error,
+    required this.busyId,
+    required this.wide,
+    required this.snapshot,
+    required this.api,
+    required this.onBack,
+    required this.onShare,
+    required this.onReload,
+    required this.onRefresh,
+    required this.onEdit,
+    required this.onOpen,
+    required this.onDelete,
+    required this.onUnreserve,
+  });
+
+  final String title;
+  final List<WishItem> items;
+  final bool loading;
+  final String? error;
+  final String? busyId;
+  final bool wide;
+  final WishlistSnapshot snapshot;
+  final QueroApi api;
+  final VoidCallback onBack;
+  final VoidCallback onShare;
+  final VoidCallback onReload;
+  final void Function(WishItem) onRefresh;
+  final void Function(WishItem) onEdit;
+  final void Function(WishItem) onOpen;
+  final void Function(WishItem) onDelete;
+  final void Function(WishItem) onUnreserve;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(wide ? 28 : 16, wide ? 20 : 8, wide ? 28 : 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                if (!wide) IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
+                Expanded(child: Text(wide ? 'Itens' : title, style: fraunces(wide ? 32 : 26))),
+                IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
+                IconButton(onPressed: onReload, tooltip: 'Recarregar', icon: const Icon(Icons.refresh)),
+              ],
+            ),
+          ),
+          if (!wide) _TotalBlock(snapshot: snapshot, onDark: false),
+          const SizedBox(height: 8),
+          Expanded(child: _content()),
+        ],
+      ),
+    );
+  }
+
+  Widget _content() {
+    if (loading) return const Center(child: CircularProgressIndicator(color: QueroColors.ink));
+    if (error != null && items.isEmpty) return Center(child: Text(error!, textAlign: TextAlign.center));
+    if (items.isEmpty) return Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center));
     if (wide) {
       return GridView.builder(
-        itemCount: state._items.length,
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 380,
-          mainAxisExtent: 520,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemBuilder: (context, index) => _card(state._items[index], fillHeight: true),
+        itemCount: items.length,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 380, mainAxisExtent: 520, crossAxisSpacing: 16, mainAxisSpacing: 16),
+        itemBuilder: (context, index) => _card(items[index], fillHeight: true),
       );
     }
     return ListView.separated(
-      itemCount: state._items.length,
+      itemCount: items.length,
       separatorBuilder: (context, index) => const SizedBox(height: 14),
-      itemBuilder: (context, index) => _card(state._items[index], fillHeight: false),
+      itemBuilder: (context, index) => _card(items[index], fillHeight: false),
     );
   }
 
   Widget _card(WishItem item, {required bool fillHeight}) {
     return ItemCard(
       item: item,
-      proxyUrl: state.widget.api.imageProxy(item),
-      busy: state._busyId == item.id,
+      proxyUrl: api.imageProxy(item),
+      imageHeaders: api.authHeaders,
+      busy: busyId == item.id,
       fillHeight: fillHeight,
-      onRefresh: () => state._refresh(item),
-      onEdit: () => state._edit(item),
-      onOpen: () => state._open(item),
-      onDelete: () => state._delete(item),
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Nada por aqui ainda', style: fraunces(32), textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            const Text(
-              'Cole o link de um produto e dê um nome. Buscamos a foto e o preço para você. Se a loja bloquear a leitura, o item entra mesmo assim.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: QueroColors.muted, fontSize: 15, height: 1.45),
-            ),
-          ],
-        ),
-      ),
+      onRefresh: () => onRefresh(item),
+      onEdit: () => onEdit(item),
+      onOpen: () => onOpen(item),
+      onDelete: () => onDelete(item),
+      onUnreserve: item.reserved ? () => onUnreserve(item) : null,
     );
   }
 }
 
 class _TotalBlock extends StatelessWidget {
   const _TotalBlock({required this.snapshot, required this.onDark});
-
   final WishlistSnapshot snapshot;
   final bool onDark;
 
@@ -428,23 +443,7 @@ class _TotalBlock extends StatelessWidget {
           Text('Sem preços para somar', style: TextStyle(color: value, fontSize: 18, fontWeight: FontWeight.w600))
         else
           for (final total in totals)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                formatMoney(total.amount, total.currency.isEmpty ? null : total.currency),
-                style: fraunces(onDark ? 34 : 26, color: value),
-              ),
-            ),
-        if (snapshot.unpricedCount > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              snapshot.unpricedCount == 1
-                  ? '1 item sem preço, fora do total'
-                  : '${snapshot.unpricedCount} itens sem preço, fora do total',
-              style: TextStyle(color: label, fontSize: 13),
-            ),
-          ),
+            Text(formatMoney(total.amount, total.currency.isEmpty ? null : total.currency), style: fraunces(onDark ? 32 : 26, color: value)),
       ],
     );
   }

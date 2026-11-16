@@ -16,6 +16,10 @@ class ItemCard extends StatelessWidget {
     required this.onOpen,
     required this.onDelete,
     this.fillHeight = false,
+    this.readOnly = false,
+    this.onReserve,
+    this.onUnreserve,
+    this.imageHeaders,
   });
 
   final WishItem item;
@@ -26,10 +30,25 @@ class ItemCard extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onDelete;
   final bool fillHeight;
+  final bool readOnly;
+  final VoidCallback? onReserve;
+  final VoidCallback? onUnreserve;
+  final Map<String, String>? imageHeaders;
 
   @override
   Widget build(BuildContext context) {
-    final details = _CardDetails(item: item, busy: busy, fillHeight: fillHeight, onRefresh: onRefresh, onEdit: onEdit, onOpen: onOpen, onDelete: onDelete);
+    final details = _CardDetails(
+      item: item,
+      busy: busy,
+      fillHeight: fillHeight,
+      readOnly: readOnly,
+      onRefresh: onRefresh,
+      onEdit: onEdit,
+      onOpen: onOpen,
+      onDelete: onDelete,
+      onReserve: onReserve,
+      onUnreserve: onUnreserve,
+    );
     return Material(
       color: QueroColors.cream,
       borderRadius: BorderRadius.circular(22),
@@ -43,7 +62,7 @@ class ItemCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _ProductImage(item: item, proxyUrl: proxyUrl),
+                _ProductImage(item: item, proxyUrl: proxyUrl, headers: imageHeaders),
                 if (busy)
                   const ColoredBox(
                     color: Color(0x66FFFCF8),
@@ -68,15 +87,21 @@ class _CardDetails extends StatelessWidget {
     required this.onEdit,
     required this.onOpen,
     required this.onDelete,
+    required this.readOnly,
+    this.onReserve,
+    this.onUnreserve,
   });
 
   final WishItem item;
   final bool busy;
   final bool fillHeight;
+  final bool readOnly;
   final VoidCallback onRefresh;
   final VoidCallback onEdit;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+  final VoidCallback? onReserve;
+  final VoidCallback? onUnreserve;
 
   @override
   Widget build(BuildContext context) {
@@ -114,15 +139,29 @@ class _CardDetails extends StatelessWidget {
               ),
             ),
           ],
+          if (item.reserved) ...[
+            const SizedBox(height: 8),
+            Text(
+              item.reservedByMe
+                  ? 'Você marcou este item'
+                  : (item.reservedLabel == null ? 'Reservado' : 'Reservado por ${item.reservedLabel}'),
+              style: const TextStyle(color: QueroColors.forest, fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ],
           if (fillHeight) const Spacer(),
           const SizedBox(height: 4),
           Wrap(
             spacing: 2,
             children: [
-              _Action(label: 'Atualizar', onPressed: busy ? null : onRefresh),
-              _Action(label: 'Editar', onPressed: busy ? null : onEdit),
+              if (!readOnly) ...[
+                _Action(label: 'Atualizar', onPressed: busy ? null : onRefresh),
+                _Action(label: 'Editar', onPressed: busy ? null : onEdit),
+              ],
               _Action(label: 'Abrir', onPressed: onOpen),
-              _Action(label: 'Excluir', onPressed: busy ? null : onDelete, danger: true),
+              if (!readOnly) _Action(label: 'Excluir', onPressed: busy ? null : onDelete, danger: true),
+              if (readOnly && !item.reserved && onReserve != null) _Action(label: 'Reservar', onPressed: busy ? null : onReserve),
+              if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
+              if (!readOnly && item.reserved && onUnreserve != null) _Action(label: 'Liberar', onPressed: busy ? null : onUnreserve),
             ],
           ),
         ],
@@ -154,16 +193,18 @@ class _Action extends StatelessWidget {
 }
 
 class _ProductImage extends StatelessWidget {
-  const _ProductImage({required this.item, required this.proxyUrl});
+  const _ProductImage({required this.item, required this.proxyUrl, this.headers});
 
   final WishItem item;
   final String proxyUrl;
+  final Map<String, String>? headers;
 
   @override
   Widget build(BuildContext context) {
     if (item.imageUrl == null || item.imageUrl!.isEmpty) return const PlaceholderArt();
     return Image.network(
       proxyUrl,
+      headers: headers,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stack) {
         return Image.network(

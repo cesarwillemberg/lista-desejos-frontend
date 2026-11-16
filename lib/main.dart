@@ -1,25 +1,81 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'api.dart';
+import 'auth_page.dart';
+import 'bootstrap.dart';
 import 'home_page.dart';
+import 'lists_page.dart';
+import 'session.dart';
+import 'shared_page.dart';
 import 'theme.dart';
 
 void main() {
-  runApp(const QueroApp());
+  configureAppUrl();
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(QueroApp(api: QueroApi(), tokens: PrefsTokenStore(), claims: PrefsClaimStore()));
 }
 
-class QueroApp extends StatelessWidget {
-  const QueroApp({super.key, this.api});
+class QueroApp extends StatefulWidget {
+  const QueroApp({super.key, required this.api, required this.tokens, required this.claims});
 
-  final QueroApi? api;
+  final QueroApi api;
+  final TokenStore tokens;
+  final ClaimStore claims;
+
+  @override
+  State<QueroApp> createState() => _QueroAppState();
+}
+
+class _QueroAppState extends State<QueroApp> {
+  late final Session _session;
+
+  @override
+  void initState() {
+    super.initState();
+    _session = Session(api: widget.api, tokens: widget.tokens, claims: widget.claims);
+    _session.boot();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Quero',
-      debugShowCheckedModeBanner: false,
-      theme: queroTheme(),
-      home: HomePage(api: api ?? QueroApi()),
+    return SessionScope(
+      session: _session,
+      child: MaterialApp(
+        title: 'Quero',
+        debugShowCheckedModeBanner: false,
+        theme: queroTheme(),
+        onGenerateRoute: (settings) {
+          final name = settings.name ?? '/';
+          return MaterialPageRoute(settings: settings, builder: (context) => _route(name));
+        },
+      ),
     );
+  }
+}
+
+Widget _route(String name) {
+  final path = name.split('?').first;
+  if (path.startsWith('/l/') && path.length > 3) {
+    return SharedPage(token: Uri.decodeComponent(path.substring(3)));
+  }
+  if (path.startsWith('/list/') && path.length > 6) {
+    return _Gate(child: ListDetailPage(listId: Uri.decodeComponent(path.substring(6))));
+  }
+  return const _Gate(child: ListsPage());
+}
+
+class _Gate extends StatelessWidget {
+  const _Gate({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = SessionScope.of(context);
+    if (!session.ready) {
+      return const Scaffold(backgroundColor: QueroColors.paper, body: Center(child: CircularProgressIndicator(color: QueroColors.ink)));
+    }
+    if (session.user == null) return const AuthPage();
+    return child;
   }
 }

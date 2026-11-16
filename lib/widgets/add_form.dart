@@ -5,9 +5,10 @@ import '../models.dart';
 import '../theme.dart';
 
 class AddPanel extends StatefulWidget {
-  const AddPanel({super.key, required this.api, required this.onCreated, this.onDark = false});
+  const AddPanel({super.key, required this.api, required this.listId, required this.onCreated, this.onDark = false});
 
   final QueroApi api;
+  final String listId;
   final ValueChanged<WishItem> onCreated;
   final bool onDark;
 
@@ -44,7 +45,7 @@ class _AddPanelState extends State<AddPanel> {
       _error = null;
     });
     try {
-      final item = await widget.api.createItem(name: name, url: url);
+      final item = await widget.api.createItem(listId: widget.listId, name: name, url: url);
       if (!mounted) return;
       _name.clear();
       _url.clear();
