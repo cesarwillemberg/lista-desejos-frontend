@@ -205,6 +205,7 @@ class QueroApi {
     bool clearImage = false,
     String? categoryId,
     bool setCategory = false,
+    bool? purchased,
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;
@@ -220,6 +221,7 @@ class QueroApi {
     }
     if (currency != null) payload['currency'] = currency;
     if (setCategory) payload['category_id'] = categoryId;
+    if (purchased != null) payload['purchased'] = purchased;
     final response = await _send('PATCH', '/api/items/$id', payload);
     return WishItem.fromJson(_jsonMap(response));
   }

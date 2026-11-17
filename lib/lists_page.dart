@@ -129,7 +129,7 @@ class _ListsPageState extends State<ListsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Quero', style: fraunces(32, style: FontStyle.italic, color: QueroColors.cream)),
+                          Text('Wishly', style: fraunces(32, style: FontStyle.italic, color: QueroColors.cream)),
                           Text(email, style: const TextStyle(color: Color(0xFFD7CDC2), fontSize: 13)),
                         ],
                       ),
@@ -196,7 +196,10 @@ class _ListsPageState extends State<ListsPage> {
   }
 
   Widget _card(WishList list) {
-    final total = list.totals.isEmpty ? 'Sem preços para somar' : formatMoney(list.totals.first.amount, list.totals.first.currency.isEmpty ? null : list.totals.first.currency);
+    final total = list.totals.isEmpty
+        ? (list.purchasedTotals.isEmpty ? 'Sem preços para somar' : 'Nada pendente')
+        : formatMoney(list.totals.first.amount, list.totals.first.currency.isEmpty ? null : list.totals.first.currency);
+    final bought = list.purchasedTotals.isEmpty ? null : formatMoney(list.purchasedTotals.first.amount, list.purchasedTotals.first.currency.isEmpty ? null : list.purchasedTotals.first.currency);
     return Material(
       color: QueroColors.cream,
       borderRadius: BorderRadius.circular(20),
@@ -221,7 +224,8 @@ class _ListsPageState extends State<ListsPage> {
               const SizedBox(height: 6),
               Text(list.itemCount == 1 ? '1 item' : '${list.itemCount} itens', style: const TextStyle(color: QueroColors.muted)),
               const SizedBox(height: 8),
-              Text(total, style: fraunces(22, color: QueroColors.forest)),
+              Text('Falta comprar $total', style: fraunces(20, color: QueroColors.forest)),
+              if (bought != null) Text('Já comprado $bought', style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough)),
               Row(
                 children: [
                   if (!list.collaborative && list.shareToken != null)

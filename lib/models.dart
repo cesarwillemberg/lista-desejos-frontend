@@ -17,6 +17,9 @@ class WishItem {
     this.reservedLabel,
     this.reservedByMe = false,
     this.addedByLabel,
+    this.purchased = false,
+    this.purchasedAt,
+    this.purchasedByLabel,
   });
 
   final String id;
@@ -34,6 +37,9 @@ class WishItem {
   final String? reservedLabel;
   final bool reservedByMe;
   final String? addedByLabel;
+  final bool purchased;
+  final DateTime? purchasedAt;
+  final String? purchasedByLabel;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -56,6 +62,9 @@ class WishItem {
       reservedLabel: json['reserved_label'] as String?,
       reservedByMe: json['reserved_by_me'] == true,
       addedByLabel: json['added_by_label'] as String?,
+      purchased: json['purchased'] == true,
+      purchasedAt: json['purchased_at'] == null ? null : DateTime.tryParse(json['purchased_at'] as String),
+      purchasedByLabel: json['purchased_by_label'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -100,23 +109,37 @@ class WishlistSnapshot {
   final List<WishCategory> categories;
   final WishList? list;
 
-  List<MoneyTotal> get totals {
-    final buckets = <String, double>{};
-    for (final item in items) {
-      if (item.price == null) continue;
-      final code = (item.currency ?? '').toUpperCase();
-      buckets[code] = (buckets[code] ?? 0) + item.price!;
-    }
-    final keys = buckets.keys.toList()
-      ..sort((a, b) {
-        if (a == 'BRL') return -1;
-        if (b == 'BRL') return 1;
-        if (a.isEmpty) return 1;
-        if (b.isEmpty) return -1;
-        return a.compareTo(b);
-      });
-    return [for (final key in keys) MoneyTotal(key, buckets[key]!)];
+  List<MoneyTotal> get totals => sumItemPrices(items.where((item) => !item.purchased));
+
+  List<MoneyTotal> get purchasedTotals => sumItemPrices(items.where((item) => item.purchased));
+}
+
+int compareWishItems(WishItem a, WishItem b) {
+  if (a.purchased != b.purchased) return a.purchased ? 1 : -1;
+  return b.createdAt.compareTo(a.createdAt);
+}
+
+List<WishItem> sortedWishItems(Iterable<WishItem> items) {
+  final copy = [...items]..sort(compareWishItems);
+  return copy;
+}
+
+List<MoneyTotal> sumItemPrices(Iterable<WishItem> items) {
+  final buckets = <String, double>{};
+  for (final item in items) {
+    if (item.price == null) continue;
+    final code = (item.currency ?? '').toUpperCase();
+    buckets[code] = (buckets[code] ?? 0) + item.price!;
   }
+  final keys = buckets.keys.toList()
+    ..sort((a, b) {
+      if (a == 'BRL') return -1;
+      if (b == 'BRL') return 1;
+      if (a.isEmpty) return 1;
+      if (b.isEmpty) return -1;
+      return a.compareTo(b);
+    });
+  return [for (final key in keys) MoneyTotal(key, buckets[key]!)];
 }
 
 class UserAccount {
@@ -185,6 +208,7 @@ class WishList {
     this.members = const [],
     this.inviteEditorUrl,
     this.inviteViewerUrl,
+    this.purchasedTotals = const [],
   });
 
   final String id;
@@ -201,6 +225,7 @@ class WishList {
   final List<ListMember> members;
   final String? inviteEditorUrl;
   final String? inviteViewerUrl;
+  final List<MoneyTotal> purchasedTotals;
 
   bool get canEdit => role != 'viewer';
   bool get isOwner => role == 'owner';
@@ -230,8 +255,20 @@ class WishList {
       members: _members(json['members']),
       inviteEditorUrl: json['invite_editor_url'] as String?,
       inviteViewerUrl: json['invite_viewer_url'] as String?,
+      purchasedTotals: _moneyList(json['purchased_totals']),
     );
   }
+}
+
+List<MoneyTotal> _moneyList(dynamic raw) {
+  if (raw is! List) return const [];
+  final totals = <MoneyTotal>[];
+  for (final entry in raw) {
+    if (entry is Map) {
+      totals.add(MoneyTotal((entry['currency'] as String?) ?? '', _asDouble(entry['amount']) ?? 0));
+    }
+  }
+  return totals;
 }
 
 List<ListMember> _members(dynamic raw) {

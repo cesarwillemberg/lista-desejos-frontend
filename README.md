@@ -1,4 +1,4 @@
-# Quero — frontend
+# Wishly — frontend
 
 Lista de desejos em Flutter. A interface está em português do Brasil e funciona no navegador (layout largo e estreito). Os projetos Android e iOS já estão neste repositório, para `flutter build apk` e `flutter build ios`.
 
@@ -36,7 +36,7 @@ To serve the web build from the API, point `QUERO_WEB_DIR` at `build/web` and le
 
 The web app uses hash routes so a refresh on GitHub Pages still opens the page. The share button copies a short link such as `https://lista-desejos-backend.onrender.com/s/Ab12cde`, which opens `https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cde`. Older long tokens still open. On a phone, **Enviar** uses the system share sheet when the browser allows it.
 
-Android App Links and iOS Universal Links use `https://lista-desejos-backend.onrender.com/s/…`. The custom scheme `quero://s/{code}` is the fallback. Set `ANDROID_SHA256_FINGERPRINTS` and `IOS_APP_ID` on the API before the store builds can claim those links.
+Android App Links and iOS Universal Links use `https://lista-desejos-backend.onrender.com/s/…`. The custom scheme `wishly://s/{code}` is the fallback. The Android package is `com.wishly.app`. Set `ANDROID_SHA256_FINGERPRINTS` and `IOS_APP_ID` on the API before the store builds can claim those links.
 
 ## What you can do
 
@@ -49,10 +49,10 @@ Android App Links and iOS Universal Links use `https://lista-desejos-backend.onr
 - **Adicionar item** sits in the Itens header and, on a phone, on a floating button. It opens a dialog (a bottom sheet on a phone) with the link, the name, and a category when the list already has one. The API still fills in the photo and the price.
 - If the list request fails or the server takes too long to wake up, the items area shows the error and **Tentar de novo** instead of spinning.
 - Add an item with a name and a product URL. The card shows the photo, contained (not cropped) on a light background, and the price the API found.
-- See the list and a total. Amounts in BRL use `R$ 1.299,90`. Other currencies keep their own code.
-- Edit the name, the image URL, and the price. Clear the price field to mark it unavailable.
+- See the list and a total. **Falta comprar** adds the prices still open. **Já comprado** is the rest. Amounts in BRL use `R$ 1.299,90`. Other currencies keep their own code.
+- Edit the name, the image URL, the price, and whether the item is **Comprado**. Clear the price field to mark it unavailable. Purchased items move to the end and can be hidden.
 - Refresh the photo and the price from the store.
-- Open the original link. Delete the item.
+- Open the product from its name or photo. Delete the item.
 
 If the store blocks the read, the item is still saved, the photo is a placeholder, and the price says “Preço indisponível”.
 

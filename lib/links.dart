@@ -1,7 +1,7 @@
-/// Pulls a share code out of an https short link or a quero:// link.
+/// Pulls a share code out of an https short link or a wishly:// link.
 String? shareCodeFromUri(Uri? uri) {
   if (uri == null) return null;
-  if (uri.scheme == 'quero' && uri.host == 's') {
+  if (uri.scheme == 'wishly' && uri.host == 's') {
     if (uri.pathSegments.isEmpty) return null;
     final code = uri.pathSegments.first.trim();
     return code.isEmpty ? null : code;
@@ -15,10 +15,10 @@ String? shareCodeFromUri(Uri? uri) {
   return null;
 }
 
-/// Pulls a collaboration invite code out of `/c/{code}` or `quero://c/{code}`.
+/// Pulls a collaboration invite code out of `/c/{code}` or `wishly://c/{code}`.
 String? inviteCodeFromUri(Uri? uri) {
   if (uri == null) return null;
-  if (uri.scheme == 'quero' && uri.host == 'c') {
+  if (uri.scheme == 'wishly' && uri.host == 'c') {
     if (uri.pathSegments.isEmpty) return null;
     final code = uri.pathSegments.first.trim();
     return code.isEmpty ? null : code;

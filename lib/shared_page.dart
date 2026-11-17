@@ -1,5 +1,4 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart';
 import 'models.dart';
@@ -23,6 +22,7 @@ class _SharedPageState extends State<SharedPage> {
   bool _loading = true;
   String? _error;
   String? _busyId;
+  var _hidePurchased = false;
 
   var _started = false;
 
@@ -105,12 +105,6 @@ class _SharedPageState extends State<SharedPage> {
     }
   }
 
-  Future<void> _open(WishItem item) async {
-    final uri = Uri.tryParse(item.url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_blank');
-  }
-
   @override
   Widget build(BuildContext context) {
     final api = SessionScope.of(context).api;
@@ -130,7 +124,7 @@ class _SharedPageState extends State<SharedPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Quero', style: fraunces(28, style: FontStyle.italic, color: QueroColors.cream)),
+                    Text('Wishly', style: fraunces(28, style: FontStyle.italic, color: QueroColors.cream)),
                     const SizedBox(height: 4),
                     const Text('Lista compartilhada · só leitura', style: TextStyle(color: Color(0xFFD7CDC2))),
                   ],
@@ -148,9 +142,14 @@ class _SharedPageState extends State<SharedPage> {
                   if (snapshot != null) ...[
                     const SizedBox(height: 6),
                     Text(
-                      snapshot.totals.isEmpty ? 'Sem preços para somar' : formatMoney(snapshot.totals.first.amount, snapshot.totals.first.currency.isEmpty ? null : snapshot.totals.first.currency),
+                      'Falta comprar ${snapshot.totals.isEmpty ? (snapshot.purchasedTotals.isEmpty ? 'sem preços' : 'nada pendente') : formatMoney(snapshot.totals.first.amount, snapshot.totals.first.currency.isEmpty ? null : snapshot.totals.first.currency)}',
                       style: fraunces(26, color: QueroColors.forest),
                     ),
+                    if (snapshot.purchasedTotals.isNotEmpty)
+                      Text(
+                        'Já comprado ${formatMoney(snapshot.purchasedTotals.first.amount, snapshot.purchasedTotals.first.currency.isEmpty ? null : snapshot.purchasedTotals.first.currency)}',
+                        style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough),
+                      ),
                   ],
                   const SizedBox(height: 12),
                   Expanded(child: _body(api)),
@@ -181,26 +180,44 @@ class _SharedPageState extends State<SharedPage> {
             readOnly: true,
             onRefresh: () {},
             onEdit: () {},
-            onOpen: () => _open(item),
             onDelete: () {},
             onReserve: () => _reserve(item),
             onUnreserve: item.reservedByMe ? () => _unreserve(item) : null,
           );
         }
+        final shown = sortedWishItems(_hidePurchased ? items.where((item) => !item.purchased) : items);
         if (categories.isNotEmpty) {
-          return GroupedItems(categories: categories, items: items, wide: wide, cardBuilder: (item, fill) => card(item, fill: fill));
-        }
-        if (!wide) {
-          return ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 14),
-            itemBuilder: (context, index) => card(items[index], fill: false),
+          return GroupedItems(
+            categories: categories,
+            items: items,
+            wide: wide,
+            hidePurchased: _hidePurchased,
+            onHidePurchased: (value) => setState(() => _hidePurchased = value),
+            cardBuilder: (item, fill) => card(item, fill: fill),
           );
         }
-        return GridView.builder(
-          itemCount: items.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 380, mainAxisExtent: 500, crossAxisSpacing: 16, mainAxisSpacing: 16),
-          itemBuilder: (context, index) => card(items[index], fill: true),
+        final list = !wide
+            ? ListView.separated(
+                itemCount: shown.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 14),
+                itemBuilder: (context, index) => card(shown[index], fill: false),
+              )
+            : GridView.builder(
+                itemCount: shown.length,
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 380, mainAxisExtent: 500, crossAxisSpacing: 16, mainAxisSpacing: 16),
+                itemBuilder: (context, index) => card(shown[index], fill: true),
+              );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FilterChip(
+              label: const Text('Ocultar comprados'),
+              selected: _hidePurchased,
+              onSelected: (value) => setState(() => _hidePurchased = value),
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: shown.isEmpty ? Center(child: Text('Nada por aqui ainda', style: fraunces(28))) : list),
+          ],
         );
       },
     );

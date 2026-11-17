@@ -150,8 +150,11 @@ class _ListSidebarState extends State<ListSidebar> {
 
   Widget _expanded() {
     final total = widget.snapshot.totals.isEmpty
-        ? 'Sem preços para somar'
+        ? (widget.snapshot.purchasedTotals.isEmpty ? 'Sem preços para somar' : 'Nada pendente')
         : formatMoney(widget.snapshot.totals.first.amount, widget.snapshot.totals.first.currency.isEmpty ? null : widget.snapshot.totals.first.currency);
+    final bought = widget.snapshot.purchasedTotals.isEmpty
+        ? null
+        : formatMoney(widget.snapshot.purchasedTotals.first.amount, widget.snapshot.purchasedTotals.first.currency.isEmpty ? null : widget.snapshot.purchasedTotals.first.currency);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
       child: Column(
@@ -218,11 +221,16 @@ class _ListSidebarState extends State<ListSidebar> {
           const SizedBox(height: 12),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('TOTAL DA LISTA', style: TextStyle(color: Color(0xFFB7ADA3), fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
+            child: Text('FALTA COMPRAR', style: TextStyle(color: Color(0xFFB7ADA3), fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Text(total, style: fraunces(28, color: QueroColors.cream)),
+          ),
+          if (bought != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text('Já comprado $bought', style: const TextStyle(color: Color(0xFFB7ADA3), decoration: TextDecoration.lineThrough)),
           ),
         ],
       ),

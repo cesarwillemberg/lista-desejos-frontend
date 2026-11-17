@@ -81,7 +81,7 @@ class _QueroAppState extends State<QueroApp> {
       session: _session,
       child: MaterialApp(
         navigatorKey: _navigatorKey,
-        title: 'Quero',
+        title: 'Wishly',
         debugShowCheckedModeBanner: false,
         theme: queroTheme(),
         onGenerateRoute: (settings) {

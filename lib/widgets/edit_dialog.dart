@@ -36,6 +36,7 @@ class _EditDialogState extends State<_EditDialog> {
   late final TextEditingController _price;
   late String _currency;
   String? _categoryId;
+  late bool _purchased;
   late List<WishCategory> _categories;
   bool _busy = false;
   String? _error;
@@ -50,6 +51,7 @@ class _EditDialogState extends State<_EditDialog> {
     _currency = _currencies.contains(current) ? current : 'BRL';
     _categories = widget.categories;
     _categoryId = widget.item.categoryId;
+    _purchased = widget.item.purchased;
   }
 
   @override
@@ -95,6 +97,7 @@ class _EditDialogState extends State<_EditDialog> {
         currency: _currency,
         setCategory: _categories.isNotEmpty,
         categoryId: _categoryId,
+        purchased: _purchased,
       );
       if (!mounted) return;
       Navigator.of(context).pop(updated);
@@ -131,6 +134,14 @@ class _EditDialogState extends State<_EditDialog> {
               const Text('Preço', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
               const SizedBox(height: 6),
               TextField(controller: _price, keyboardType: TextInputType.number, decoration: _field(hint: '1.299,90')),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Comprado'),
+                subtitle: Text(_purchased ? 'Comprado ✓' : 'Marcar como comprado'),
+                value: _purchased,
+                onChanged: _busy ? null : (value) => setState(() => _purchased = value),
+              ),
               const SizedBox(height: 14),
               const Text('Moeda', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
               const SizedBox(height: 6),

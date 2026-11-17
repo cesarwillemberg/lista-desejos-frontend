@@ -1,8 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'api.dart';
 import 'models.dart';
 import 'money.dart';
@@ -32,6 +30,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   bool _loading = true;
   String? _error;
   String? _busyId;
+  var _hidePurchased = false;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var _started = false;
@@ -134,12 +133,17 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     if (updated != null) _replace(updated);
   }
 
-  Future<void> _open(WishItem item) async {
-    final uri = Uri.tryParse(item.url);
-    if (uri == null) return;
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_blank');
-    if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o link.')));
+  Future<void> _togglePurchased(WishItem item) async {
+    setState(() => _busyId = item.id);
+    try {
+      final updated = await SessionScope.of(context).api.updateItem(item.id, purchased: !item.purchased);
+      if (!mounted) return;
+      _replace(updated);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _busyId = null);
     }
   }
 
@@ -197,7 +201,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
 
   Future<void> _shareOrCopy(String link) async {
     try {
-      final result = await SharePlus.instance.share(ShareParams(text: link, subject: 'Lista no Quero'));
+      final result = await SharePlus.instance.share(ShareParams(text: link, subject: 'Lista no Wishly'));
       if (result.status == ShareResultStatus.unavailable) {
         await Clipboard.setData(ClipboardData(text: link));
       }
@@ -312,7 +316,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           onReserve: _reserve,
           onRefresh: _refresh,
           onEdit: _edit,
-          onOpen: _open,
+          onTogglePurchased: canEdit ? _togglePurchased : null,
+          hidePurchased: _hidePurchased,
+          onHidePurchased: (value) => setState(() => _hidePurchased = value),
           onDelete: _delete,
           onUnreserve: _clearReservation,
         );
@@ -570,7 +576,9 @@ class _Board extends StatelessWidget {
     this.onReserve,
     required this.onRefresh,
     required this.onEdit,
-    required this.onOpen,
+    this.onTogglePurchased,
+    required this.hidePurchased,
+    required this.onHidePurchased,
     required this.onDelete,
     required this.onUnreserve,
   });
@@ -598,7 +606,9 @@ class _Board extends StatelessWidget {
   final void Function(WishItem)? onReserve;
   final void Function(WishItem) onRefresh;
   final void Function(WishItem) onEdit;
-  final void Function(WishItem) onOpen;
+  final void Function(WishItem)? onTogglePurchased;
+  final bool hidePurchased;
+  final ValueChanged<bool> onHidePurchased;
   final void Function(WishItem) onDelete;
   final void Function(WishItem) onUnreserve;
 
@@ -730,10 +740,19 @@ class _Board extends StatelessWidget {
       );
     }
     if (categories.isEmpty) {
-      return SliverList.separated(
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 14),
-        itemBuilder: (context, index) => _card(items[index], fillHeight: false),
+      final shown = sortedWishItems(hidePurchased ? items.where((item) => !item.purchased) : items);
+      return SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(child: _hideChip()),
+          if (shown.isEmpty)
+            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('Nada por aqui ainda')))
+          else
+            SliverList.separated(
+              itemCount: shown.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 14),
+              itemBuilder: (context, index) => _card(shown[index], fillHeight: false),
+            ),
+        ],
       );
     }
     return SliverToBoxAdapter(
@@ -742,6 +761,8 @@ class _Board extends StatelessWidget {
         items: items,
         wide: false,
         embedded: true,
+        hidePurchased: hidePurchased,
+        onHidePurchased: onHidePurchased,
         cardBuilder: (item, fill) => _card(item, fillHeight: fill),
       ),
     );
@@ -764,33 +785,52 @@ class _Board extends StatelessWidget {
     if (items.isEmpty && categories.isEmpty) {
       return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: [SizedBox(height: 240, child: Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center)))]));
     }
+    final shown = sortedWishItems(hidePurchased ? items.where((item) => !item.purchased) : items);
     if (categories.isEmpty) {
-      if (wide) {
-        return _pull(GridView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: items.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 380,
-            mainAxisExtent: 540,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemBuilder: (context, index) => _card(items[index], fillHeight: true),
-        ));
-      }
-      return _pull(ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 14),
-        itemBuilder: (context, index) => _card(items[index], fillHeight: false),
-      ));
+      final body = shown.isEmpty
+          ? const Center(child: Text('Nada por aqui ainda'))
+          : wide
+              ? GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: shown.length,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 380,
+                    mainAxisExtent: 560,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemBuilder: (context, index) => _card(shown[index], fillHeight: true),
+                )
+              : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: shown.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) => _card(shown[index], fillHeight: false),
+                );
+      return _pull(Column(children: [_hideChip(), Expanded(child: body)]));
     }
     return GroupedItems(
       categories: categories,
       items: items,
       wide: wide,
       onRefresh: onReload,
+      hidePurchased: hidePurchased,
+      onHidePurchased: onHidePurchased,
       cardBuilder: (item, fill) => _card(item, fillHeight: fill),
+    );
+  }
+
+  Widget _hideChip() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FilterChip(
+        label: const Text('Ocultar comprados'),
+        selected: hidePurchased,
+        onSelected: onHidePurchased,
+        selectedColor: const Color(0xFFF3D2C4),
+        checkmarkColor: QueroColors.ink,
+        labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -809,7 +849,7 @@ class _Board extends StatelessWidget {
       readOnly: viewer,
       onRefresh: () => onRefresh(item),
       onEdit: () => onEdit(item),
-      onOpen: () => onOpen(item),
+      onTogglePurchased: onTogglePurchased == null ? null : () => onTogglePurchased!(item),
       onDelete: () => onDelete(item),
       onReserve: viewer && !item.reserved && onReserve != null ? () => onReserve!(item) : null,
       onUnreserve: item.reserved && (viewer ? item.reservedByMe : true) ? () => onUnreserve(item) : null,
@@ -1029,13 +1069,22 @@ class _TotalBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('TOTAL DA LISTA', style: TextStyle(color: label, fontSize: 12, letterSpacing: 1.4, fontWeight: FontWeight.w600)),
+        Text('FALTA COMPRAR', style: TextStyle(color: label, fontSize: 12, letterSpacing: 1.4, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         if (totals.isEmpty)
-          Text('Sem preços para somar', style: TextStyle(color: value, fontSize: 18, fontWeight: FontWeight.w600))
+          Text(snapshot.purchasedTotals.isEmpty ? 'Sem preços para somar' : 'Nada pendente', style: TextStyle(color: value, fontSize: 18, fontWeight: FontWeight.w600))
         else
           for (final total in totals)
             Text(formatMoney(total.amount, total.currency.isEmpty ? null : total.currency), style: fraunces(onDark ? 32 : 26, color: value)),
+        if (snapshot.purchasedTotals.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('JÁ COMPRADO', style: TextStyle(color: label, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+          for (final total in snapshot.purchasedTotals)
+            Text(
+              formatMoney(total.amount, total.currency.isEmpty ? null : total.currency),
+              style: TextStyle(color: label, fontSize: onDark ? 18 : 16, decoration: TextDecoration.lineThrough),
+            ),
+        ],
       ],
     );
   }

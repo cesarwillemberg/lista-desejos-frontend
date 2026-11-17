@@ -67,7 +67,7 @@ class _AuthPageState extends State<AuthPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
                 children: [
-                  Text('Quero', style: fraunces(48, style: FontStyle.italic)),
+                  Text('Wishly', style: fraunces(48, style: FontStyle.italic)),
                   const SizedBox(height: 8),
                   const Text('Entre para guardar suas listas neste aparelho.', style: TextStyle(color: QueroColors.muted, height: 1.4)),
                   const SizedBox(height: 28),
@@ -89,7 +89,7 @@ class _AuthPageState extends State<AuthPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Quero', style: fraunces(64, style: FontStyle.italic, color: QueroColors.cream)),
+                        Text('Wishly', style: fraunces(64, style: FontStyle.italic, color: QueroColors.cream)),
                         const SizedBox(height: 12),
                         const Text(
                           'Suas listas de desejos, com foto e preço da loja. Compartilhe um link para ninguém comprar o mesmo presente.',

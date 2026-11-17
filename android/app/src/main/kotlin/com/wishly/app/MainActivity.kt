@@ -1,4 +1,4 @@
-package com.quero.quero
+package com.wishly.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -11,8 +11,12 @@ class ItemGroup {
   final String name;
   final List<WishItem> items;
 
-  String? get subtotal {
-    final priced = items.where((item) => item.price != null).toList();
+  String? get remainingLabel => _oneTotal(items.where((item) => !item.purchased));
+
+  String? get boughtLabel => _oneTotal(items.where((item) => item.purchased));
+
+  String? _oneTotal(Iterable<WishItem> source) {
+    final priced = source.where((item) => item.price != null).toList();
     if (priced.isEmpty) return null;
     final codes = priced.map((item) => (item.currency ?? '').toUpperCase()).toSet();
     if (codes.length != 1) return 'preços em mais de uma moeda';
@@ -29,9 +33,9 @@ List<ItemGroup> buildGroups(List<WishCategory> categories, List<WishItem> items,
       ItemGroup(
         id: category.id,
         name: category.name,
-        items: items.where((item) => item.categoryId == category.id).toList(),
+        items: sortedWishItems(items.where((item) => item.categoryId == category.id)),
       ),
-    ItemGroup(id: null, name: 'Sem categoria', items: items.where((item) => item.categoryId == null).toList()),
+    ItemGroup(id: null, name: 'Sem categoria', items: sortedWishItems(items.where((item) => item.categoryId == null))),
   ];
   if (filterId == null) {
     return groups.where((group) => group.id != null || group.items.isNotEmpty).toList();
@@ -49,6 +53,8 @@ class GroupedItems extends StatefulWidget {
     required this.cardBuilder,
     this.onRefresh,
     this.embedded = false,
+    this.hidePurchased = false,
+    this.onHidePurchased,
   });
 
   final List<WishCategory> categories;
@@ -57,6 +63,8 @@ class GroupedItems extends StatefulWidget {
   final Widget Function(WishItem item, bool fillHeight) cardBuilder;
   final Future<void> Function()? onRefresh;
   final bool embedded;
+  final bool hidePurchased;
+  final ValueChanged<bool>? onHidePurchased;
 
   @override
   State<GroupedItems> createState() => _GroupedItemsState();
@@ -68,12 +76,25 @@ class _GroupedItemsState extends State<GroupedItems> {
 
   @override
   Widget build(BuildContext context) {
-    final groups = buildGroups(widget.categories, widget.items, filterId: _filter);
+    final visible = widget.hidePurchased ? widget.items.where((item) => !item.purchased).toList() : widget.items;
+    final groups = buildGroups(widget.categories, visible, filterId: _filter);
     final chips = SizedBox(
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
+          if (widget.onHidePurchased != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: const Text('Ocultar comprados'),
+                selected: widget.hidePurchased,
+                onSelected: widget.onHidePurchased,
+                selectedColor: const Color(0xFFF3D2C4),
+                checkmarkColor: QueroColors.ink,
+                labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
+              ),
+            ),
           _chip('Todas', _filter == null, () => setState(() => _filter = null)),
           for (final category in widget.categories) _chip(category.name, _filter == category.id, () => setState(() => _filter = category.id)),
           _chip('Sem categoria', _filter == '', () => setState(() => _filter = '')),
@@ -166,7 +187,8 @@ class _GroupedItemsState extends State<GroupedItems> {
   Widget _header(ItemGroup group) {
     final key = group.id ?? '';
     final closed = _collapsed.contains(key);
-    final subtotal = group.subtotal;
+    final remaining = group.remainingLabel;
+    final bought = group.boughtLabel;
     return InkWell(
       onTap: () => setState(() {
         if (closed) {
@@ -186,9 +208,13 @@ class _GroupedItemsState extends State<GroupedItems> {
               '${group.items.length} ${group.items.length == 1 ? 'item' : 'itens'}',
               style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
             ),
-            if (subtotal != null) ...[
+            if (remaining != null) ...[
               const SizedBox(width: 12),
-              Text(subtotal, style: fraunces(18, color: QueroColors.forest)),
+              Text(remaining, style: fraunces(18, color: QueroColors.forest)),
+            ],
+            if (bought != null) ...[
+              const SizedBox(width: 8),
+              Text(bought, style: fraunces(16, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
             ],
           ],
         ),
