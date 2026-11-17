@@ -1,12 +1,53 @@
 {
   "version": 2,
   "skills": {
+    "brand-guidelines": {
+      "source": "anthropics/skills",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "sourceType": "github",
+      "skillPath": "skills/brand-guidelines/SKILL.md",
+      "computedHash": "10067cdd9be9cd5d97c741fc6e25830135afa0e11cc71e567b75763e26d08799"
+    },
+    "design-mobile-apps": {
+      "source": "designed-by-ai/skills",
+      "commit": "03c20aec6dcedb5fabfb03dc37982eb52ef19ed6",
+      "sourceType": "github",
+      "skillPath": "skills/design-mobile-apps/SKILL.md",
+      "computedHash": "eec6dae3f26f8f154fe190a53387f0b2eab39aa120932d5c33af7f3284f04b10"
+    },
+    "design-system": {
+      "source": "anthropics/knowledge-work-plugins",
+      "commit": "e91a134584eb798bac7fb0379358006a2b63b965",
+      "sourceType": "github",
+      "skillPath": "design/skills/design-system/SKILL.md",
+      "computedHash": "ea43527b6f738c03f2a5fbaf76a2567b0271ebbb0d158aa9c618321366aaaff8"
+    },
+    "extract-design-system": {
+      "source": "arvindrk/extract-design-system",
+      "commit": "1873741ba8dea755e35e6e15134f7918cd58e036",
+      "sourceType": "github",
+      "skillPath": "skills/extract-design-system/SKILL.md",
+      "computedHash": "fcc959a17cec8bd719b97bad240a6a5eaf8660700d4876a4392e4199497d3012"
+    },
     "flutter-best-practices": {
       "source": "evanca/flutter-ai-rules",
       "commit": "ced864ab5189956dbf719a84011c24d860092116",
       "sourceType": "github",
       "skillPath": "skills/flutter-best-practices/SKILL.md",
       "computedHash": "9c747b489581b53ad3858c9febb8d7d79cf689beabe73ba2aba0c4871e62d3a4"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92"
     }
   }
 }
