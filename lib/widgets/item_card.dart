@@ -23,7 +23,6 @@ class ItemCard extends StatelessWidget {
     required this.onRefresh,
     required this.onEdit,
     required this.onDelete,
-    this.fillHeight = false,
     this.readOnly = false,
     this.onReserve,
     this.onUnreserve,
@@ -37,7 +36,6 @@ class ItemCard extends StatelessWidget {
   final VoidCallback onRefresh;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final bool fillHeight;
   final bool readOnly;
   final VoidCallback? onReserve;
   final VoidCallback? onUnreserve;
@@ -49,7 +47,6 @@ class ItemCard extends StatelessWidget {
     final details = _CardDetails(
       item: item,
       busy: busy,
-      fillHeight: fillHeight,
       readOnly: readOnly,
       onRefresh: onRefresh,
       onEdit: onEdit,
@@ -68,10 +65,10 @@ class ItemCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           AspectRatio(
-            aspectRatio: 1.7,
+            aspectRatio: 1.55,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -90,7 +87,7 @@ class ItemCard extends StatelessWidget {
               ],
             ),
           ),
-          if (fillHeight) Expanded(child: details) else details,
+          details,
         ],
       ),
     );
@@ -116,7 +113,6 @@ class _CardDetails extends StatelessWidget {
   const _CardDetails({
     required this.item,
     required this.busy,
-    required this.fillHeight,
     required this.onRefresh,
     required this.onEdit,
     required this.onDelete,
@@ -128,7 +124,6 @@ class _CardDetails extends StatelessWidget {
 
   final WishItem item;
   final bool busy;
-  final bool fillHeight;
   final bool readOnly;
   final VoidCallback onRefresh;
   final VoidCallback onEdit;
@@ -210,24 +205,34 @@ class _CardDetails extends StatelessWidget {
               style: const TextStyle(color: QueroColors.forest, fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ],
-          if (fillHeight) const Spacer(),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 2,
+          const SizedBox(height: 8),
+          Row(
             children: [
-              if (!readOnly && onTogglePurchased != null)
-                _Action(
-                  label: item.purchased ? 'Comprado ✓' : 'Marcar como comprado',
-                  onPressed: busy ? null : onTogglePurchased,
-                ),
-              if (!readOnly) ...[
-                _Action(label: 'Atualizar', onPressed: busy ? null : onRefresh),
-                _Action(label: 'Editar', onPressed: busy ? null : onEdit),
-                _Action(label: 'Excluir', onPressed: busy ? null : onDelete, danger: true),
+              if (!readOnly && onTogglePurchased != null) _BuyToggle(purchased: item.purchased, onPressed: busy ? null : onTogglePurchased),
+              const Spacer(),
+              if (!readOnly)
+                PopupMenuButton<String>(
+                  tooltip: 'Ações',
+                  icon: const Icon(Icons.more_vert, size: 20),
+                  padding: EdgeInsets.zero,
+                  onSelected: (value) => switch (value) {
+                    'refresh' => onRefresh(),
+                    'edit' => onEdit(),
+                    'delete' => onDelete(),
+                    'release' => onUnreserve?.call(),
+                    _ => null,
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
+                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                    if (item.reserved && onUnreserve != null) const PopupMenuItem(value: 'release', child: Text('Liberar')),
+                    const PopupMenuItem(value: 'delete', child: Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                  ],
+                )
+              else ...[
+                if (!item.reserved && onReserve != null) _Action(label: 'Reservar', onPressed: busy ? null : onReserve),
+                if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
               ],
-              if (readOnly && !item.reserved && onReserve != null) _Action(label: 'Reservar', onPressed: busy ? null : onReserve),
-              if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
-              if (!readOnly && item.reserved && onUnreserve != null) _Action(label: 'Liberar', onPressed: busy ? null : onUnreserve),
             ],
           ),
         ],
@@ -251,9 +256,9 @@ class _StoreLinkState extends State<_StoreLink> {
   var _hover = false;
 
   Future<void> _open() async {
-    final uri = Uri.tryParse(widget.url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_blank');
+    if (Uri.tryParse(widget.url) case final uri?) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication, webOnlyWindowName: '_blank');
+    }
   }
 
   @override
@@ -273,19 +278,82 @@ class _StoreLinkState extends State<_StoreLink> {
   }
 }
 
+class _BuyToggle extends StatelessWidget {
+  const _BuyToggle({required this.purchased, required this.onPressed});
+
+  final bool purchased;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = purchased ? QueroColors.forest : QueroColors.ink;
+    return Tooltip(
+      message: purchased ? 'Desmarcar comprado' : 'Marcar como comprado',
+      child: Material(
+        color: purchased ? QueroColors.forest : Colors.transparent,
+        shape: StadiumBorder(side: BorderSide(color: purchased ? QueroColors.forest : QueroColors.line)),
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const StadiumBorder(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(purchased ? Icons.check_circle : Icons.check_circle_outline, size: 16, color: purchased ? Colors.white : color),
+                const SizedBox(width: 4),
+                Text(
+                  purchased ? 'Comprado' : 'Comprar',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: purchased ? Colors.white : color),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ItemWrap extends StatelessWidget {
+  const ItemWrap({super.key, required this.count, required this.itemBuilder});
+
+  final int count;
+  final Widget Function(int index) itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        const maxCard = 252.0;
+        final estimated = (constraints.maxWidth / maxCard).floor();
+        final columns = estimated < 1 ? 1 : estimated;
+        final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (var index = 0; index < count; index++) SizedBox(width: width, child: itemBuilder(index)),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _Action extends StatelessWidget {
-  const _Action({required this.label, required this.onPressed, this.danger = false});
+  const _Action({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback? onPressed;
-  final bool danger;
 
   @override
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: danger ? QueroColors.danger : QueroColors.ink,
+        foregroundColor: QueroColors.ink,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         minimumSize: const Size(0, 36),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

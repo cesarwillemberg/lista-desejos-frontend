@@ -750,7 +750,7 @@ class _Board extends StatelessWidget {
             SliverList.separated(
               itemCount: shown.length,
               separatorBuilder: (context, index) => const SizedBox(height: 14),
-              itemBuilder: (context, index) => _card(shown[index], fillHeight: false),
+              itemBuilder: (context, index) => _card(shown[index]),
             ),
         ],
       );
@@ -763,7 +763,7 @@ class _Board extends StatelessWidget {
         embedded: true,
         hidePurchased: hidePurchased,
         onHidePurchased: onHidePurchased,
-        cardBuilder: (item, fill) => _card(item, fillHeight: fill),
+        cardBuilder: (item, fill) => _card(item),
       ),
     );
   }
@@ -790,22 +790,15 @@ class _Board extends StatelessWidget {
       final body = shown.isEmpty
           ? const Center(child: Text('Nada por aqui ainda'))
           : wide
-              ? GridView.builder(
+              ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: shown.length,
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 380,
-                    mainAxisExtent: 560,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemBuilder: (context, index) => _card(shown[index], fillHeight: true),
+                  children: [ItemWrap(count: shown.length, itemBuilder: (index) => _card(shown[index]))],
                 )
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: shown.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) => _card(shown[index], fillHeight: false),
+                  itemBuilder: (context, index) => _card(shown[index]),
                 );
       return _pull(Column(children: [_hideChip(), Expanded(child: body)]));
     }
@@ -816,7 +809,7 @@ class _Board extends StatelessWidget {
       onRefresh: onReload,
       hidePurchased: hidePurchased,
       onHidePurchased: onHidePurchased,
-      cardBuilder: (item, fill) => _card(item, fillHeight: fill),
+      cardBuilder: (item, fill) => _card(item),
     );
   }
 
@@ -838,14 +831,13 @@ class _Board extends StatelessWidget {
     return RefreshIndicator(color: QueroColors.ink, onRefresh: onReload, child: child);
   }
 
-  Widget _card(WishItem item, {required bool fillHeight}) {
+  Widget _card(WishItem item) {
     final viewer = !canEdit;
     return ItemCard(
       item: item,
       proxyUrl: api.imageProxy(item),
       imageHeaders: api.authHeaders,
       busy: busyId == item.id,
-      fillHeight: fillHeight,
       readOnly: viewer,
       onRefresh: () => onRefresh(item),
       onEdit: () => onEdit(item),

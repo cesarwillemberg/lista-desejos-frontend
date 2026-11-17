@@ -171,12 +171,11 @@ class _SharedPageState extends State<SharedPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
-        Widget card(WishItem item, {required bool fill}) {
+        Widget card(WishItem item) {
           return ItemCard(
             item: item,
             proxyUrl: api.sharedImageProxy(widget.token, item),
             busy: _busyId == item.id,
-            fillHeight: fill,
             readOnly: true,
             onRefresh: () {},
             onEdit: () {},
@@ -193,20 +192,16 @@ class _SharedPageState extends State<SharedPage> {
             wide: wide,
             hidePurchased: _hidePurchased,
             onHidePurchased: (value) => setState(() => _hidePurchased = value),
-            cardBuilder: (item, fill) => card(item, fill: fill),
+            cardBuilder: (item, fill) => card(item),
           );
         }
         final list = !wide
             ? ListView.separated(
                 itemCount: shown.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 14),
-                itemBuilder: (context, index) => card(shown[index], fill: false),
+                itemBuilder: (context, index) => card(shown[index]),
               )
-            : GridView.builder(
-                itemCount: shown.length,
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 380, mainAxisExtent: 500, crossAxisSpacing: 16, mainAxisSpacing: 16),
-                itemBuilder: (context, index) => card(shown[index], fill: true),
-              );
+            : ListView(children: [ItemWrap(count: shown.length, itemBuilder: (index) => card(shown[index]))]);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

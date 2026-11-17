@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'models.dart';
 import 'money.dart';
 import 'theme.dart';
+import 'widgets/item_card.dart';
 
 class ItemGroup {
   const ItemGroup({required this.id, required this.name, required this.items});
@@ -144,18 +145,7 @@ class _GroupedItemsState extends State<GroupedItems> {
                       child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
                     )
                   else if (widget.wide)
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: group.items.length,
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 380,
-                        mainAxisExtent: 500,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemBuilder: (context, index) => widget.cardBuilder(group.items[index], true),
-                    )
+                    ItemWrap(count: group.items.length, itemBuilder: (index) => widget.cardBuilder(group.items[index], false))
                   else
                     for (final item in group.items)
                       Padding(padding: const EdgeInsets.only(bottom: 14), child: widget.cardBuilder(item, false)),
