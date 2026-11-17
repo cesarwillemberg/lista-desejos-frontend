@@ -198,6 +198,7 @@ class QueroApi {
   Future<WishItem> updateItem(
     String id, {
     String? name,
+    String? url,
     String? imageUrl,
     double? price,
     String? currency,
@@ -209,6 +210,7 @@ class QueroApi {
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;
+    if (url != null) payload['url'] = url;
     if (clearImage) {
       payload['image_url'] = '';
     } else if (imageUrl != null) {

@@ -81,6 +81,7 @@ class Session extends ChangeNotifier {
   UserAccount? user;
   Map<String, String> claimMap = {};
   bool ready = false;
+  List<WishList>? listsCache;
 
   String? get claimHeader {
     if (claimMap.isEmpty) return null;
@@ -92,16 +93,36 @@ class Session extends ChangeNotifier {
     final saved = await tokens.read();
     if (saved != null && saved.isNotEmpty) {
       api.token = saved;
+      final meFuture = api.me();
+      final listsFuture = api.lists();
       try {
-        user = await api.me();
+        user = await meFuture;
       } on ApiException {
         api.token = null;
         user = null;
         await tokens.write(null);
       }
+      if (user != null) {
+        try {
+          listsCache = await listsFuture;
+        } on ApiException {
+          listsCache = null;
+        }
+      }
     }
     ready = true;
     notifyListeners();
+  }
+
+  Future<List<WishList>> loadLists({bool force = false}) async {
+    if (!force && listsCache != null) return listsCache!;
+    final lists = await api.lists();
+    listsCache = lists;
+    return lists;
+  }
+
+  void rememberLists(List<WishList> lists) {
+    listsCache = lists;
   }
 
   Future<void> enter(UserAccount account) async {
@@ -113,6 +134,7 @@ class Session extends ChangeNotifier {
   Future<void> logout() async {
     api.token = null;
     user = null;
+    listsCache = null;
     await tokens.write(null);
     notifyListeners();
   }

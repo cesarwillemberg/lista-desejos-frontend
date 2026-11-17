@@ -31,13 +31,17 @@ class _ListsPageState extends State<ListsPage> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool force = false}) async {
+    final session = SessionScope.of(context);
+    final cached = force ? null : session.listsCache;
     setState(() {
-      _loading = _lists.isEmpty;
+      _loading = cached == null && _lists.isEmpty;
       _error = null;
+      if (cached != null) _lists = cached;
     });
+    if (cached != null) return;
     try {
-      final lists = await SessionScope.of(context).api.lists();
+      final lists = await session.loadLists(force: force);
       if (!mounted) return;
       setState(() {
         _lists = lists;
@@ -59,6 +63,7 @@ class _ListsPageState extends State<ListsPage> {
       final created = await SessionScope.of(context).api.createList(name);
       if (!mounted) return;
       setState(() => _lists = [created, ..._lists.where((list) => list.id != created.id)]);
+      SessionScope.of(context).rememberLists(_lists);
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -72,6 +77,7 @@ class _ListsPageState extends State<ListsPage> {
       final updated = await SessionScope.of(context).api.renameList(list.id, name);
       if (!mounted) return;
       setState(() => _lists = [for (final current in _lists) current.id == list.id ? updated : current]);
+      SessionScope.of(context).rememberLists(_lists);
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -100,6 +106,7 @@ class _ListsPageState extends State<ListsPage> {
       await SessionScope.of(context).api.deleteList(list.id);
       if (!mounted) return;
       setState(() => _lists = _lists.where((current) => current.id != list.id).toList());
+      SessionScope.of(context).rememberLists(_lists);
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));

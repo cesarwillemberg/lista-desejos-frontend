@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
@@ -36,6 +38,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var _started = false;
+  DateTime? _loadedAt;
+  Timer? _poll;
+  DateTime? _pollSince;
 
   @override
   void initState() {
@@ -45,13 +50,17 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
 
   @override
   void dispose() {
+    _poll?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _started) _load();
+    if (state != AppLifecycleState.resumed || !_started) return;
+    final last = _loadedAt;
+    if (last != null && DateTime.now().difference(last) < const Duration(seconds: 60)) return;
+    _load();
   }
 
   @override
@@ -70,11 +79,22 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       _error = null;
     });
     try {
-      final api = SessionScope.of(context).api;
-      final snapshot = await api.listItems(widget.listId);
+      final session = SessionScope.of(context);
+      final api = session.api;
+      final cached = session.listsCache;
+      final snapshotFuture = api.listItems(widget.listId);
+      final listsFuture = cached != null ? Future<List<WishList>>.value(cached) : session.loadLists();
+      final results = await Future.wait([snapshotFuture, listsFuture]);
       if (!mounted) return;
-      final lists = await api.lists();
-      if (!mounted) return;
+      final snapshot = results[0] as WishlistSnapshot;
+      var lists = List<WishList>.from(results[1] as List<WishList>);
+      final current = snapshot.list;
+      if (current != null) {
+        final known = lists.any((list) => list.id == current.id);
+        lists = [for (final list in lists) list.id == current.id ? current : list];
+        if (!known) lists = [current, ...lists];
+        session.rememberLists(lists);
+      }
       WishList? match;
       for (final candidate in lists) {
         if (candidate.id == widget.listId) match = candidate;
@@ -83,10 +103,12 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         _allLists = lists;
         _items = snapshot.items;
         _categories = snapshot.categories;
-        _list = snapshot.list ?? match;
+        _list = current ?? match;
         _loading = false;
-        _error = (snapshot.list ?? match) == null ? 'Lista não encontrada.' : null;
+        _loadedAt = DateTime.now();
+        _error = (current ?? match) == null ? 'Lista não encontrada.' : null;
       });
+      _armPoll();
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -96,8 +118,42 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     }
   }
 
+  void _armPoll() {
+    final pending = _items.any((item) => item.status == 'pending');
+    if (!pending) {
+      _poll?.cancel();
+      _poll = null;
+      _pollSince = null;
+      return;
+    }
+    _pollSince ??= DateTime.now();
+    _poll ??= Timer.periodic(const Duration(seconds: 2), (_) => _pollItems());
+  }
+
+  Future<void> _pollItems() async {
+    final started = _pollSince;
+    if (started != null && DateTime.now().difference(started) > const Duration(seconds: 30)) {
+      _poll?.cancel();
+      _poll = null;
+      return;
+    }
+    try {
+      final snapshot = await SessionScope.of(context).api.listItems(widget.listId);
+      if (!mounted) return;
+      setState(() {
+        _items = snapshot.items;
+        _categories = snapshot.categories;
+        if (snapshot.list != null) _list = snapshot.list;
+      });
+      _armPoll();
+    } catch (_) {
+      // The next tick tries again until the short poll window ends.
+    }
+  }
+
   void _insert(WishItem item) {
     setState(() => _items = [item, ..._items.where((current) => current.id != item.id)]);
+    _armPoll();
     final message = item.status == 'ok' ? '${item.name} entrou na lista.' : (item.message ?? 'Item salvo.');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
@@ -112,6 +168,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       final updated = await SessionScope.of(context).api.refreshItem(item.id);
       if (!mounted) return;
       _replace(updated);
+      _armPoll();
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -132,7 +189,10 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         return created;
       },
     );
-    if (updated != null) _replace(updated);
+    if (updated != null) {
+      _replace(updated);
+      _armPoll();
+    }
   }
 
   Future<void> _togglePurchased(WishItem item) async {

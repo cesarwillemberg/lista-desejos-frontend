@@ -45,7 +45,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --base-href /lista-desejos-frontend/ --dart-define=API_BASE="${API_BASE}"
+        run: flutter build web --release --wasm --base-href /lista-desejos-frontend/ --dart-define=API_BASE="${API_BASE}"
 
       - name: Pages extras
         run: |

@@ -32,6 +32,7 @@ class _EditDialog extends StatefulWidget {
 
 class _EditDialogState extends State<_EditDialog> {
   late final TextEditingController _name;
+  late final TextEditingController _url;
   late final TextEditingController _image;
   late final TextEditingController _price;
   late String _currency;
@@ -45,6 +46,7 @@ class _EditDialogState extends State<_EditDialog> {
   void initState() {
     super.initState();
     _name = TextEditingController(text: widget.item.name);
+    _url = TextEditingController(text: widget.item.url);
     _image = TextEditingController(text: widget.item.imageUrl ?? '');
     _price = TextEditingController(text: widget.item.price == null ? '' : _priceField(widget.item.price!));
     final current = (widget.item.currency ?? 'BRL').toUpperCase();
@@ -57,6 +59,7 @@ class _EditDialogState extends State<_EditDialog> {
   @override
   void dispose() {
     _name.dispose();
+    _url.dispose();
     _image.dispose();
     _price.dispose();
     super.dispose();
@@ -66,6 +69,11 @@ class _EditDialogState extends State<_EditDialog> {
     final name = _name.text.trim();
     if (name.isEmpty) {
       setState(() => _error = 'Informe um nome.');
+      return;
+    }
+    final url = _url.text.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      setState(() => _error = 'O link do produto precisa começar com http:// ou https://.');
       return;
     }
     final image = _image.text.trim();
@@ -90,6 +98,7 @@ class _EditDialogState extends State<_EditDialog> {
       final updated = await widget.api.updateItem(
         widget.item.id,
         name: name,
+        url: url,
         imageUrl: image,
         clearImage: image.isEmpty,
         price: price,
@@ -126,6 +135,10 @@ class _EditDialogState extends State<_EditDialog> {
               const Text('Nome', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
               const SizedBox(height: WishlySpace.s2),
               TextField(controller: _name, decoration: _field()),
+              const SizedBox(height: WishlySpace.s4),
+              const Text('Link do produto', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+              const SizedBox(height: WishlySpace.s2),
+              TextField(controller: _url, keyboardType: TextInputType.url, decoration: _field(hint: 'https://')),
               const SizedBox(height: WishlySpace.s4),
               const Text('URL da imagem', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
               const SizedBox(height: WishlySpace.s2),

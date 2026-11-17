@@ -25,7 +25,7 @@ flutter run -d chrome --dart-define=API_BASE=http://127.0.0.1:47231
 
 ```bash
 flutter test
-flutter build web --dart-define=API_BASE=http://127.0.0.1:47231
+flutter build web --wasm --dart-define=API_BASE=http://127.0.0.1:47231
 flutter build apk --dart-define=API_BASE=https://seu-servidor.example
 flutter build ios --dart-define=API_BASE=https://seu-servidor.example
 ```
@@ -58,7 +58,7 @@ If the store blocks the read, the item is still saved, the photo is a placeholde
 
 ## GitHub Pages
 
-`.github/workflows/pages.yml` builds Flutter web and deploys it.
+`.github/workflows/pages.yml` builds Flutter web with WebAssembly and deploys it. Browsers that cannot run it load the CanvasKit JavaScript build automatically. `web/index.html` shows the Wishly wordmark while that download finishes. `web/sw.js` caches the shell so a repeat visit does not wait out GitHub Pages' `max-age=600`.
 
 - Base path: `--base-href /lista-desejos-frontend/`
 - API origin: `--dart-define=API_BASE=...` from the repository variable `API_BASE`, or the secret `API_BASE` if the variable is empty

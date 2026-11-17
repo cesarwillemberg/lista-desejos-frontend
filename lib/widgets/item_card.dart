@@ -55,6 +55,7 @@ class ItemCard extends StatelessWidget {
       onUnreserve: onUnreserve,
       onTogglePurchased: onTogglePurchased,
     );
+    final waiting = item.status == 'pending';
     Widget image = _ProductImage(item: item, proxyUrl: proxyUrl, headers: imageHeaders);
     if (item.purchased) {
       image = Opacity(opacity: WishlyOpacity.purchased, child: ColorFiltered(colorFilter: _grey, child: image));
@@ -81,7 +82,7 @@ class ItemCard extends StatelessWidget {
                     top: WishlySpace.s3,
                     child: _BoughtBadge(),
                   ),
-                if (busy)
+                if (busy || waiting)
                   const ColoredBox(
                     color: WishlyTokens.scrim,
                     child: Center(child: CircularProgressIndicator(strokeWidth: WishlySize.strokeBold, color: QueroColors.ink)),
@@ -137,7 +138,7 @@ class _CardDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = item.price == null ? 'Preço indisponível' : formatMoney(item.price!, item.currency);
+    final price = item.status == 'pending' && item.price == null ? 'Lendo o preço…' : (item.price == null ? 'Preço indisponível' : formatMoney(item.price!, item.currency));
     final priceStyle = item.price == null
         ? const TextStyle(color: QueroColors.muted, fontSize: WishlyText.base, fontWeight: FontWeight.w500)
         : fraunces(WishlyText.xl2, color: item.purchased ? QueroColors.muted : QueroColors.forest);
