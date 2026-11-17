@@ -12,6 +12,7 @@ import 'members_dialog.dart';
 import 'widgets/add_form.dart';
 import 'widgets/edit_dialog.dart';
 import 'widgets/item_card.dart';
+import 'widgets/skeleton.dart';
 
 class ListDetailPage extends StatefulWidget {
   const ListDetailPage({super.key, required this.listId});
@@ -716,7 +717,7 @@ class _Board extends StatelessWidget {
 
   Widget _narrowBody() {
     if (loading) {
-      return const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: QueroColors.ink)));
+      return const SliverFillRemaining(hasScrollBody: false, child: PageSkeleton(cards: 2));
     }
     if (error != null && items.isEmpty) {
       return SliverFillRemaining(
@@ -769,7 +770,7 @@ class _Board extends StatelessWidget {
   }
 
   Widget _content() {
-    if (loading) return const Center(child: CircularProgressIndicator(color: QueroColors.ink));
+    if (loading) return const PageSkeleton(cards: 2);
     if (error != null && items.isEmpty) {
       return Center(
         child: Column(
@@ -820,7 +821,7 @@ class _Board extends StatelessWidget {
         label: const Text('Ocultar comprados'),
         selected: hidePurchased,
         onSelected: onHidePurchased,
-        selectedColor: const Color(0xFFF3D2C4),
+        selectedColor: WishlyTokens.chip,
         checkmarkColor: QueroColors.ink,
         labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
       ),
@@ -1055,7 +1056,7 @@ class _TotalBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = onDark ? const Color(0xFFB7ADA3) : QueroColors.muted;
+    final label = onDark ? WishlyTokens.onInkMuted : QueroColors.muted;
     final value = onDark ? QueroColors.cream : QueroColors.forest;
     final totals = snapshot.totals;
     return Column(

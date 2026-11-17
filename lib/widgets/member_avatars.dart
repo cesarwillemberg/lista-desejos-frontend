@@ -23,7 +23,7 @@ class MemberAvatars extends StatelessWidget {
               widthFactor: 0.72,
               child: CircleAvatar(
                 radius: 13,
-                backgroundColor: index.isEven ? (onDark ? const Color(0xFF5C4E44) : QueroColors.ink) : QueroColors.accent,
+                backgroundColor: index.isEven ? (onDark ? WishlyTokens.inkAvatar : QueroColors.ink) : QueroColors.accent,
                 child: Text(
                   shown[index].initials,
                   style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
@@ -45,7 +45,7 @@ class SharedBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: onDark ? const Color(0xFF4A3024) : const Color(0xFFF6DDD2),
+        color: onDark ? WishlyTokens.badgeOnInk : WishlyTokens.badge,
         borderRadius: BorderRadius.circular(99),
       ),
       child: const Padding(

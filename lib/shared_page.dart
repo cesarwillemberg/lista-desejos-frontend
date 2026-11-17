@@ -7,6 +7,7 @@ import 'session.dart';
 import 'theme.dart';
 import 'grouped_items.dart';
 import 'widgets/item_card.dart';
+import 'widgets/skeleton.dart';
 
 class SharedPage extends StatefulWidget {
   const SharedPage({super.key, required this.token});
@@ -126,7 +127,7 @@ class _SharedPageState extends State<SharedPage> {
                   children: [
                     Text('Wishly', style: fraunces(28, style: FontStyle.italic, color: QueroColors.cream)),
                     const SizedBox(height: 4),
-                    const Text('Lista compartilhada · só leitura', style: TextStyle(color: Color(0xFFD7CDC2))),
+                    const Text('Lista compartilhada · só leitura', style: TextStyle(color: WishlyTokens.onInk)),
                   ],
                 ),
               ),
@@ -163,7 +164,7 @@ class _SharedPageState extends State<SharedPage> {
   }
 
   Widget _body(QueroApi api) {
-    if (_loading) return const Center(child: CircularProgressIndicator(color: QueroColors.ink));
+    if (_loading) return const PageSkeleton();
     if (_error != null) return Center(child: Text(_error!, textAlign: TextAlign.center));
     final items = _snapshot?.items ?? [];
     final categories = _snapshot?.categories ?? const <WishCategory>[];

@@ -8,7 +8,7 @@ class PlaceholderArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFE7DFD4),
+      color: WishlyTokens.placeholder,
       child: CustomPaint(
         painter: const _HatchPainter(),
         child: Center(
@@ -25,7 +25,7 @@ class _HatchPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFD9CFC2)
+      ..color = WishlyTokens.placeholderLine
       ..strokeWidth = 1;
     for (double x = -size.height; x < size.width; x += 14) {
       canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);

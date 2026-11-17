@@ -93,7 +93,7 @@ class _AuthPageState extends State<AuthPage> {
                         const SizedBox(height: 12),
                         const Text(
                           'Suas listas de desejos, com foto e preço da loja. Compartilhe um link para ninguém comprar o mesmo presente.',
-                          style: TextStyle(color: Color(0xFFD7CDC2), fontSize: 18, height: 1.4),
+                          style: TextStyle(color: WishlyTokens.onInk, fontSize: 18, height: 1.4),
                         ),
                       ],
                     ),
@@ -109,7 +109,7 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Widget _form({required bool onDark}) {
-    final label = onDark ? const Color(0xFFD9CFC4) : QueroColors.muted;
+    final label = onDark ? WishlyTokens.onInkLabel : QueroColors.muted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,7 +133,7 @@ class _AuthPageState extends State<AuthPage> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!, style: TextStyle(color: onDark ? const Color(0xFFFFB4A2) : QueroColors.danger, height: 1.35)),
+          Text(_error!, style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, height: 1.35)),
         ],
         const SizedBox(height: 16),
         FilledButton(

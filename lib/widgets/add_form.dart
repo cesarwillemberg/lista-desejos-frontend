@@ -145,10 +145,10 @@ class AddForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = onDark ? const Color(0xFFD9CFC4) : QueroColors.muted;
+    final labelColor = onDark ? WishlyTokens.onInkLabel : QueroColors.muted;
     final fill = onDark ? QueroColors.inkSoft : Colors.white;
     final text = onDark ? QueroColors.cream : QueroColors.ink;
-    final hint = onDark ? const Color(0xFFB3A79C) : const Color(0xFFA3988C);
+    final hint = onDark ? WishlyTokens.onInkHint : WishlyTokens.muted;
     final border = onDark ? Colors.transparent : QueroColors.line;
 
     InputDecoration decoration(String hintText) {
@@ -233,7 +233,7 @@ class AddForm extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             error!,
-            style: TextStyle(color: onDark ? const Color(0xFFFFB4A2) : QueroColors.danger, fontSize: 13, height: 1.35),
+            style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, fontSize: 13, height: 1.35),
           ),
         ],
         const SizedBox(height: 16),

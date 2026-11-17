@@ -119,7 +119,7 @@ class _ListSidebarState extends State<ListSidebar> {
       children: [
         IconButton(onPressed: _toggle, tooltip: 'Expandir', color: QueroColors.cream, icon: const Icon(Icons.keyboard_double_arrow_right)),
         IconButton(onPressed: widget.onBack, tooltip: 'Suas listas', color: QueroColors.cream, icon: const Icon(Icons.arrow_back)),
-        const Divider(color: Color(0xFF4A3F37)),
+        const Divider(color: WishlyTokens.inkLine),
         Expanded(
           child: ListView(
             children: [
@@ -131,7 +131,7 @@ class _ListSidebarState extends State<ListSidebar> {
                     child: InkWell(
                       onTap: () => widget.onSelect(list),
                       child: CircleAvatar(
-                        backgroundColor: list.id == widget.currentId ? QueroColors.accent : const Color(0xFF4A3F37),
+                        backgroundColor: list.id == widget.currentId ? QueroColors.accent : WishlyTokens.inkLine,
                         child: Text(
                           list.name.isEmpty ? '?' : list.name.substring(0, 1).toUpperCase(),
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
@@ -188,7 +188,7 @@ class _ListSidebarState extends State<ListSidebar> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                const Expanded(child: Text('LISTAS', style: TextStyle(color: Color(0xFFB7ADA3), fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700))),
+                const Expanded(child: Text('LISTAS', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700))),
                 TextButton(onPressed: widget.onCreate, child: const Text('Nova lista', style: TextStyle(color: QueroColors.accent))),
               ],
             ),
@@ -199,7 +199,7 @@ class _ListSidebarState extends State<ListSidebar> {
                 for (final list in widget.lists)
                   ListTile(
                     selected: list.id == widget.currentId,
-                    selectedTileColor: const Color(0xFF3A2F28),
+                    selectedTileColor: WishlyTokens.inkRaised,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? Colors.white : QueroColors.cream, fontWeight: FontWeight.w700)),
                     subtitle: list.collaborative
@@ -212,7 +212,7 @@ class _ListSidebarState extends State<ListSidebar> {
                           )
                         : null,
                     isThreeLine: list.collaborative,
-                    trailing: Text('${list.itemCount}', style: const TextStyle(color: Color(0xFFD7CDC2))),
+                    trailing: Text('${list.itemCount}', style: const TextStyle(color: WishlyTokens.onInk)),
                     onTap: () => widget.onSelect(list),
                   ),
               ],
@@ -221,7 +221,7 @@ class _ListSidebarState extends State<ListSidebar> {
           const SizedBox(height: 12),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('FALTA COMPRAR', style: TextStyle(color: Color(0xFFB7ADA3), fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
+            child: Text('FALTA COMPRAR', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -230,7 +230,7 @@ class _ListSidebarState extends State<ListSidebar> {
           if (bought != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('Já comprado $bought', style: const TextStyle(color: Color(0xFFB7ADA3), decoration: TextDecoration.lineThrough)),
+              child: Text('Já comprado $bought', style: const TextStyle(color: WishlyTokens.onInkMuted, decoration: TextDecoration.lineThrough)),
           ),
         ],
       ),

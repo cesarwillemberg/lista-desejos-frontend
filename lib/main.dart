@@ -14,6 +14,7 @@ import 'lists_page.dart';
 import 'session.dart';
 import 'shared_page.dart';
 import 'theme.dart';
+import 'widgets/skeleton.dart';
 
 void main() {
   configureAppUrl();
@@ -116,7 +117,7 @@ class _Gate extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = SessionScope.of(context);
     if (!session.ready) {
-      return const Scaffold(backgroundColor: QueroColors.paper, body: Center(child: CircularProgressIndicator(color: QueroColors.ink)));
+      return const Scaffold(backgroundColor: QueroColors.paper, body: PageSkeleton());
     }
     if (session.user == null) return const AuthPage();
     return child;

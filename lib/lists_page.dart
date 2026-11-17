@@ -6,6 +6,7 @@ import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
 import 'widgets/member_avatars.dart';
+import 'widgets/skeleton.dart';
 
 class ListsPage extends StatefulWidget {
   const ListsPage({super.key});
@@ -130,7 +131,7 @@ class _ListsPageState extends State<ListsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Wishly', style: fraunces(32, style: FontStyle.italic, color: QueroColors.cream)),
-                          Text(email, style: const TextStyle(color: Color(0xFFD7CDC2), fontSize: 13)),
+                          Text(email, style: const TextStyle(color: WishlyTokens.onInk, fontSize: 13)),
                         ],
                       ),
                     ),
@@ -169,7 +170,7 @@ class _ListsPageState extends State<ListsPage> {
   }
 
   Widget _body() {
-    if (_loading) return const Center(child: CircularProgressIndicator(color: QueroColors.ink));
+    if (_loading) return const PageSkeleton();
     if (_error != null && _lists.isEmpty) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!), const SizedBox(height: 12), OutlinedButton(onPressed: _load, child: const Text('Tentar de novo'))]));
     }

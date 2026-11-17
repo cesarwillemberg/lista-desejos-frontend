@@ -81,7 +81,7 @@ class ItemCard extends StatelessWidget {
                   ),
                 if (busy)
                   const ColoredBox(
-                    color: Color(0x66FFFCF8),
+                    color: WishlyTokens.scrim,
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: QueroColors.ink)),
                   ),
               ],

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'api.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/skeleton.dart';
 
 class InvitePage extends StatefulWidget {
   const InvitePage({super.key, required this.code});
@@ -50,7 +51,7 @@ class _InvitePageState extends State<InvitePage> {
                   children: [
                     Text('Entrando na lista', style: fraunces(28)),
                     const SizedBox(height: 16),
-                    const CircularProgressIndicator(color: QueroColors.ink),
+                    WishlySkeleton(height: 18, width: 180),
                   ],
                 )
               : Column(
