@@ -114,27 +114,27 @@ class _EditDialogState extends State<_EditDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: QueroColors.cream,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Editar item', style: fraunces(26)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
+      title: Text('Editar item', style: fraunces(WishlyText.xl2)),
       content: SizedBox(
-        width: 420,
+        width: WishlySize.field,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Nome', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
-              const SizedBox(height: 6),
+              const Text('Nome', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+              const SizedBox(height: WishlySpace.s2),
               TextField(controller: _name, decoration: _field()),
-              const SizedBox(height: 14),
-              const Text('URL da imagem', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
-              const SizedBox(height: 6),
+              const SizedBox(height: WishlySpace.s4),
+              const Text('URL da imagem', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+              const SizedBox(height: WishlySpace.s2),
               TextField(controller: _image, decoration: _field(hint: 'https://')),
-              const SizedBox(height: 14),
-              const Text('Preço', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
-              const SizedBox(height: 6),
+              const SizedBox(height: WishlySpace.s4),
+              const Text('Preço', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+              const SizedBox(height: WishlySpace.s2),
               TextField(controller: _price, keyboardType: TextInputType.number, decoration: _field(hint: '1.299,90')),
-              const SizedBox(height: 8),
+              const SizedBox(height: WishlySpace.s2),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Comprado'),
@@ -142,13 +142,13 @@ class _EditDialogState extends State<_EditDialog> {
                 value: _purchased,
                 onChanged: _busy ? null : (value) => setState(() => _purchased = value),
               ),
-              const SizedBox(height: 14),
-              const Text('Moeda', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
-              const SizedBox(height: 6),
+              const SizedBox(height: WishlySpace.s4),
+              const Text('Moeda', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+              const SizedBox(height: WishlySpace.s2),
               if (_categories.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                const Text('Categoria', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
-                const SizedBox(height: 6),
+                const SizedBox(height: WishlySpace.s4),
+                const Text('Categoria', style: TextStyle(fontSize: WishlyText.sm, color: QueroColors.muted)),
+                const SizedBox(height: WishlySpace.s2),
                 DropdownButton<String>(
                   value: _categoryId ?? '',
                   isExpanded: true,
@@ -182,8 +182,8 @@ class _EditDialogState extends State<_EditDialog> {
                 onChanged: _busy ? null : (value) => setState(() => _currency = value ?? _currency),
               ),
               if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: QueroColors.danger, height: 1.35)),
+                const SizedBox(height: WishlySpace.s3),
+                Text(_error!, style: const TextStyle(color: QueroColors.danger, height: WishlyText.body)),
               ],
             ],
           ),
@@ -193,7 +193,7 @@ class _EditDialogState extends State<_EditDialog> {
         TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Cancelar')),
         FilledButton(
           onPressed: _busy ? null : _save,
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: Text(_busy ? 'Salvando…' : 'Salvar'),
         ),
       ],
@@ -204,11 +204,11 @@ class _EditDialogState extends State<_EditDialog> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: QueroColors.line)),
+      fillColor: WishlyColor.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s3),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: const BorderSide(color: QueroColors.line)),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(WishlyRadius.lg),
         borderSide: const BorderSide(color: QueroColors.line),
       ),
     );
@@ -221,13 +221,13 @@ Future<String?> _askCategoryName(BuildContext context) {
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text('Nova categoria', style: fraunces(24)),
+      title: Text('Nova categoria', style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Ex.: Cozinha')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: const Text('Criar'),
         ),
       ],

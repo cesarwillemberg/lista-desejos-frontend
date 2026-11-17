@@ -80,13 +80,13 @@ class _GroupedItemsState extends State<GroupedItems> {
     final visible = widget.hidePurchased ? widget.items.where((item) => !item.purchased).toList() : widget.items;
     final groups = buildGroups(widget.categories, visible, filterId: _filter);
     final chips = SizedBox(
-      height: 44,
+      height: WishlySize.chipRow,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           if (widget.onHidePurchased != null)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: WishlySpace.s2),
               child: FilterChip(
                 label: const Text('Ocultar comprados'),
                 selected: widget.hidePurchased,
@@ -107,18 +107,18 @@ class _GroupedItemsState extends State<GroupedItems> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           chips,
-          const SizedBox(height: 8),
+          const SizedBox(height: WishlySpace.s2),
           for (final group in groups) ...[
             _header(group),
             if (!_collapsed.contains(group.id ?? '')) ...[
               if (group.items.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.only(bottom: WishlySpace.s4),
                   child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
                 )
               else
-                for (final item in group.items) Padding(padding: const EdgeInsets.only(bottom: 14), child: widget.cardBuilder(item, false)),
-              const SizedBox(height: 8),
+                for (final item in group.items) Padding(padding: const EdgeInsets.only(bottom: WishlySpace.s4), child: widget.cardBuilder(item, false)),
+              const SizedBox(height: WishlySpace.s2),
             ],
           ],
         ],
@@ -128,7 +128,7 @@ class _GroupedItemsState extends State<GroupedItems> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         chips,
-        const SizedBox(height: 8),
+        const SizedBox(height: WishlySpace.s2),
         Expanded(
           child: RefreshIndicator(
             color: QueroColors.ink,
@@ -141,15 +141,15 @@ class _GroupedItemsState extends State<GroupedItems> {
                 if (!_collapsed.contains(group.id ?? '')) ...[
                   if (group.items.isEmpty)
                     const Padding(
-                      padding: EdgeInsets.only(bottom: 16),
+                      padding: EdgeInsets.only(bottom: WishlySpace.s4),
                       child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
                     )
                   else if (widget.wide)
                     ItemWrap(count: group.items.length, itemBuilder: (index) => widget.cardBuilder(group.items[index], false))
                   else
                     for (final item in group.items)
-                      Padding(padding: const EdgeInsets.only(bottom: 14), child: widget.cardBuilder(item, false)),
-                  const SizedBox(height: 8),
+                      Padding(padding: const EdgeInsets.only(bottom: WishlySpace.s4), child: widget.cardBuilder(item, false)),
+                  const SizedBox(height: WishlySpace.s2),
                 ],
               ],
             ],
@@ -162,7 +162,7 @@ class _GroupedItemsState extends State<GroupedItems> {
 
   Widget _chip(String label, bool selected, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: WishlySpace.s2),
       child: FilterChip(
         label: Text(label),
         selected: selected,
@@ -188,23 +188,23 @@ class _GroupedItemsState extends State<GroupedItems> {
         }
       }),
       child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 10),
+        padding: const EdgeInsets.only(top: WishlySpace.s2, bottom: WishlySpace.s3),
         child: Row(
           children: [
             Icon(closed ? Icons.expand_more : Icons.expand_less, color: QueroColors.ink),
-            const SizedBox(width: 4),
-            Expanded(child: Text(group.name, style: fraunces(24))),
+            const SizedBox(width: WishlySpace.s1),
+            Expanded(child: Text(group.name, style: fraunces(WishlyText.xl2))),
             Text(
               '${group.items.length} ${group.items.length == 1 ? 'item' : 'itens'}',
               style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
             ),
             if (remaining != null) ...[
-              const SizedBox(width: 12),
-              Text(remaining, style: fraunces(18, color: QueroColors.forest)),
+              const SizedBox(width: WishlySpace.s3),
+              Text(remaining, style: fraunces(WishlyText.lg, color: QueroColors.forest)),
             ],
             if (bought != null) ...[
-              const SizedBox(width: 8),
-              Text(bought, style: fraunces(16, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
+              const SizedBox(width: WishlySpace.s2),
+              Text(bought, style: fraunces(WishlyText.base, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
             ],
           ],
         ),

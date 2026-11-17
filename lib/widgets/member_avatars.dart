@@ -14,19 +14,19 @@ class MemberAvatars extends StatelessWidget {
     final shown = members.take(5).toList();
     if (shown.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 28,
+      height: WishlySize.avatar,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var index = 0; index < shown.length; index++)
             Align(
-              widthFactor: 0.72,
+              widthFactor: WishlySize.avatarOverlap,
               child: CircleAvatar(
-                radius: 13,
+                radius: WishlySize.avatarRadius,
                 backgroundColor: index.isEven ? (onDark ? WishlyTokens.inkAvatar : QueroColors.ink) : QueroColors.accent,
                 child: Text(
                   shown[index].initials,
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: WishlyColor.white, fontSize: WishlyText.xs, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -46,11 +46,11 @@ class SharedBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: onDark ? WishlyTokens.badgeOnInk : WishlyTokens.badge,
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(WishlyRadius.full),
       ),
       child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        child: Text('Compartilhada', style: TextStyle(color: QueroColors.accent, fontSize: 11, fontWeight: FontWeight.w700)),
+        padding: EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s1),
+        child: Text('Compartilhada', style: TextStyle(color: QueroColors.accent, fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
       ),
     );
   }

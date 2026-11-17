@@ -8,9 +8,9 @@ import 'widgets/member_avatars.dart';
 
 const _widthKey = 'quero_sidebar_width';
 const _collapsedKey = 'quero_sidebar_collapsed';
-const _minWidth = 260.0;
-const _maxWidth = 480.0;
-const _railWidth = 76.0;
+const _minWidth = WishlySize.sidebarMin;
+const _maxWidth = WishlySize.sidebarMax;
+const _railWidth = WishlySize.sidebarRail;
 
 class ListSidebar extends StatefulWidget {
   const ListSidebar({
@@ -41,7 +41,7 @@ class ListSidebar extends StatefulWidget {
 }
 
 class _ListSidebarState extends State<ListSidebar> {
-  double _width = 320;
+  double _width = WishlySize.sidebarDefault;
   bool _collapsed = false;
   bool _ready = false;
 
@@ -55,7 +55,7 @@ class _ListSidebarState extends State<ListSidebar> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _width = (prefs.getDouble(_widthKey) ?? 320).clamp(_minWidth, _maxWidth);
+      _width = (prefs.getDouble(_widthKey) ?? WishlySize.sidebarDefault).clamp(_minWidth, _maxWidth);
       _collapsed = prefs.getBool(_collapsedKey) ?? false;
       _ready = true;
     });
@@ -77,7 +77,7 @@ class _ListSidebarState extends State<ListSidebar> {
     if (!widget.resizable) {
       return SizedBox.expand(child: _panel(collapsed: false));
     }
-    final width = !_ready ? 320.0 : (_collapsed ? _railWidth : _width);
+    final width = !_ready ? WishlySize.sidebarDefault : (_collapsed ? _railWidth : _width);
     return SizedBox(
       width: width,
       child: Stack(
@@ -85,9 +85,9 @@ class _ListSidebarState extends State<ListSidebar> {
           Positioned.fill(child: _panel(collapsed: _ready && _collapsed)),
           if (_ready && !_collapsed)
             Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
+              right: WishlySpace.s0,
+              top: WishlySpace.s0,
+              bottom: WishlySpace.s0,
               child: MouseRegion(
                 cursor: SystemMouseCursors.resizeColumn,
                 child: GestureDetector(
@@ -96,7 +96,7 @@ class _ListSidebarState extends State<ListSidebar> {
                     setState(() => _width = (_width + details.delta.dx).clamp(_minWidth, _maxWidth));
                   },
                   onHorizontalDragEnd: (_) => _persist(),
-                  child: const SizedBox(width: 8),
+                  child: const SizedBox(width: WishlySpace.s2),
                 ),
               ),
             ),
@@ -127,14 +127,14 @@ class _ListSidebarState extends State<ListSidebar> {
                 Tooltip(
                   message: list.name,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: WishlySpace.s1),
                     child: InkWell(
                       onTap: () => widget.onSelect(list),
                       child: CircleAvatar(
                         backgroundColor: list.id == widget.currentId ? QueroColors.accent : WishlyTokens.inkLine,
                         child: Text(
                           list.name.isEmpty ? '?' : list.name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: WishlyColor.white, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -156,7 +156,7 @@ class _ListSidebarState extends State<ListSidebar> {
         ? null
         : formatMoney(widget.snapshot.purchasedTotals.first.amount, widget.snapshot.purchasedTotals.first.currency.isEmpty ? null : widget.snapshot.purchasedTotals.first.currency);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
+      padding: const EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s3, WishlySpace.s4, WishlySpace.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,21 +174,21 @@ class _ListSidebarState extends State<ListSidebar> {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(32, color: QueroColors.cream)),
+            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+            child: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
           ),
           if (widget.onMembers != null)
             TextButton.icon(
               onPressed: widget.onMembers,
-              icon: const Icon(Icons.group_outlined, color: QueroColors.cream, size: 18),
+              icon: const Icon(Icons.group_outlined, color: QueroColors.cream, size: WishlyIcon.lg),
               label: const Text('Membros', style: TextStyle(color: QueroColors.cream)),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: WishlySpace.s2),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
             child: Row(
               children: [
-                const Expanded(child: Text('LISTAS', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700))),
+                const Expanded(child: Text('LISTAS', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700))),
                 TextButton(onPressed: widget.onCreate, child: const Text('Nova lista', style: TextStyle(color: QueroColors.accent))),
               ],
             ),
@@ -200,13 +200,13 @@ class _ListSidebarState extends State<ListSidebar> {
                   ListTile(
                     selected: list.id == widget.currentId,
                     selectedTileColor: WishlyTokens.inkRaised,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? Colors.white : QueroColors.cream, fontWeight: FontWeight.w700)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
+                    title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? WishlyColor.white : QueroColors.cream, fontWeight: FontWeight.w700)),
                     subtitle: list.collaborative
                         ? Row(
                             children: [
                               MemberAvatars(members: list.members, onDark: true),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: WishlySpace.s2),
                               const SharedBadge(onDark: true),
                             ],
                           )
@@ -218,18 +218,18 @@ class _ListSidebarState extends State<ListSidebar> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: WishlySpace.s3),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('FALTA COMPRAR', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: 12, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
+            padding: EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+            child: Text('FALTA COMPRAR', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700)),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text(total, style: fraunces(28, color: QueroColors.cream)),
+            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s2),
+            child: Text(total, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
           ),
           if (bought != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
               child: Text('Já comprado $bought', style: const TextStyle(color: WishlyTokens.onInkMuted, decoration: TextDecoration.lineThrough)),
           ),
         ],

@@ -44,24 +44,24 @@ class _InvitePageState extends State<InvitePage> {
       backgroundColor: QueroColors.paper,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(WishlySpace.s8),
           child: _error == null
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Entrando na lista', style: fraunces(28)),
-                    const SizedBox(height: 16),
-                    WishlySkeleton(height: 18, width: 180),
+                    Text('Entrando na lista', style: fraunces(WishlyText.xl3)),
+                    const SizedBox(height: WishlySpace.s4),
+                    WishlySkeleton(height: WishlyText.lg, width: WishlySize.skeletonLine),
                   ],
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(_error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: WishlySpace.s4),
                     FilledButton(
                       onPressed: _accept,
-                      style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+                      style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
                       child: const Text('Tentar de novo'),
                     ),
                   ],

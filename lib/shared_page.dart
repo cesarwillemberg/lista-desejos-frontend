@@ -6,6 +6,7 @@ import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
 import 'grouped_items.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/item_card.dart';
 import 'widgets/skeleton.dart';
 
@@ -61,13 +62,13 @@ class _SharedPageState extends State<SharedPage> {
         final controller = TextEditingController();
         return AlertDialog(
           backgroundColor: QueroColors.cream,
-          title: Text('Já comprei', style: fraunces(26)),
+          title: Text('Já comprei', style: fraunces(WishlyText.xl2)),
           content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'Seu nome (opcional)')),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () => Navigator.pop(context, controller.text.trim()),
-              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
               child: const Text('Reservar'),
             ),
           ],
@@ -121,12 +122,12 @@ class _SharedPageState extends State<SharedPage> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                padding: const EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s4, WishlySpace.s5, WishlySpace.s4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Wishly', style: fraunces(28, style: FontStyle.italic, color: QueroColors.cream)),
-                    const SizedBox(height: 4),
+                    Text('Wishly', style: fraunces(WishlyText.xl3, style: FontStyle.italic, color: QueroColors.cream)),
+                    const SizedBox(height: WishlySpace.s1),
                     const Text('Lista compartilhada · só leitura', style: TextStyle(color: WishlyTokens.onInk)),
                   ],
                 ),
@@ -135,16 +136,16 @@ class _SharedPageState extends State<SharedPage> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s4, WishlySpace.s4, WishlySpace.s4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: fraunces(32)),
+                  Text(title, style: fraunces(WishlyText.xl3)),
                   if (snapshot != null) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: WishlySpace.s2),
                     Text(
                       'Falta comprar ${snapshot.totals.isEmpty ? (snapshot.purchasedTotals.isEmpty ? 'sem preços' : 'nada pendente') : formatMoney(snapshot.totals.first.amount, snapshot.totals.first.currency.isEmpty ? null : snapshot.totals.first.currency)}',
-                      style: fraunces(26, color: QueroColors.forest),
+                      style: fraunces(WishlyText.xl2, color: QueroColors.forest),
                     ),
                     if (snapshot.purchasedTotals.isNotEmpty)
                       Text(
@@ -152,7 +153,7 @@ class _SharedPageState extends State<SharedPage> {
                         style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough),
                       ),
                   ],
-                  const SizedBox(height: 12),
+                  const SizedBox(height: WishlySpace.s3),
                   Expanded(child: _body(api)),
                 ],
               ),
@@ -168,10 +169,10 @@ class _SharedPageState extends State<SharedPage> {
     if (_error != null) return Center(child: Text(_error!, textAlign: TextAlign.center));
     final items = _snapshot?.items ?? [];
     final categories = _snapshot?.categories ?? const <WishCategory>[];
-    if (items.isEmpty && categories.isEmpty) return Center(child: Text('Nada por aqui ainda', style: fraunces(28)));
+    if (items.isEmpty && categories.isEmpty) return const EmptyState(title: 'Nada por aqui ainda', message: 'Esta lista ainda não tem itens.');
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 900;
+        final wide = constraints.maxWidth >= WishlyBreak.lg;
         Widget card(WishItem item) {
           return ItemCard(
             item: item,
@@ -199,7 +200,7 @@ class _SharedPageState extends State<SharedPage> {
         final list = !wide
             ? ListView.separated(
                 itemCount: shown.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 14),
+                separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
                 itemBuilder: (context, index) => card(shown[index]),
               )
             : ListView(children: [ItemWrap(count: shown.length, itemBuilder: (index) => card(shown[index]))]);
@@ -211,8 +212,8 @@ class _SharedPageState extends State<SharedPage> {
               selected: _hidePurchased,
               onSelected: (value) => setState(() => _hidePurchased = value),
             ),
-            const SizedBox(height: 8),
-            Expanded(child: shown.isEmpty ? Center(child: Text('Nada por aqui ainda', style: fraunces(28))) : list),
+            const SizedBox(height: WishlySpace.s2),
+            Expanded(child: shown.isEmpty ? const EmptyState(title: 'Nada por aqui ainda', message: 'Esta lista ainda não tem itens.') : list),
           ],
         );
       },

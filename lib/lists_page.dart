@@ -5,6 +5,7 @@ import 'models.dart';
 import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/member_avatars.dart';
 import 'widgets/skeleton.dart';
 
@@ -82,13 +83,13 @@ class _ListsPageState extends State<ListsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        title: Text('Excluir “${list.name}”?', style: fraunces(24)),
+        title: Text('Excluir “${list.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('A lista e os itens saem da sua conta. O link compartilhado deixa de funcionar.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: Colors.white),
+            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: WishlyColor.white),
             child: const Text('Excluir'),
           ),
         ],
@@ -123,15 +124,15 @@ class _ListsPageState extends State<ListsPage> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 18, 8, 18),
+                padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s5, WishlySpace.s2, WishlySpace.s5),
                 child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Wishly', style: fraunces(32, style: FontStyle.italic, color: QueroColors.cream)),
-                          Text(email, style: const TextStyle(color: WishlyTokens.onInk, fontSize: 13)),
+                          Text('Wishly', style: fraunces(WishlyText.xl3, style: FontStyle.italic, color: QueroColors.cream)),
+                          Text(email, style: const TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.sm)),
                         ],
                       ),
                     ),
@@ -143,22 +144,22 @@ class _ListsPageState extends State<ListsPage> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              padding: const EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s5, WishlySpace.s5, WishlySpace.s3),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text('Suas listas', style: fraunces(32)),
+                      Text('Suas listas', style: fraunces(WishlyText.xl3)),
                       const Spacer(),
                       FilledButton(
                         onPressed: _create,
-                        style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+                        style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
                         child: const Text('Nova lista'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: WishlySpace.s4),
                   Expanded(child: _body()),
                 ],
               ),
@@ -172,24 +173,24 @@ class _ListsPageState extends State<ListsPage> {
   Widget _body() {
     if (_loading) return const PageSkeleton();
     if (_error != null && _lists.isEmpty) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!), const SizedBox(height: 12), OutlinedButton(onPressed: _load, child: const Text('Tentar de novo'))]));
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!), const SizedBox(height: WishlySpace.s3), OutlinedButton(onPressed: _load, child: const Text('Tentar de novo'))]));
     }
     if (_lists.isEmpty) {
-      return Center(child: Text('Nenhuma lista ainda', style: fraunces(28)));
+      return const EmptyState(title: 'Nenhuma lista ainda', message: 'Crie a primeira e comece a guardar o que você quer.', icon: Icons.playlist_add_outlined);
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 720;
+        final wide = constraints.maxWidth >= WishlyBreak.md;
         if (!wide) {
           return ListView.separated(
             itemCount: _lists.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s3),
             itemBuilder: (context, index) => _card(_lists[index]),
           );
         }
         return GridView.builder(
           itemCount: _lists.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 360, mainAxisExtent: 220, crossAxisSpacing: 14, mainAxisSpacing: 14),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: WishlySize.listCard, mainAxisExtent: WishlySize.listCardHeight, crossAxisSpacing: WishlySpace.s4, mainAxisSpacing: WishlySpace.s4),
           itemBuilder: (context, index) => _card(_lists[index]),
         );
       },
@@ -203,34 +204,34 @@ class _ListsPageState extends State<ListsPage> {
     final bought = list.purchasedTotals.isEmpty ? null : formatMoney(list.purchasedTotals.first.amount, list.purchasedTotals.first.currency.isEmpty ? null : list.purchasedTotals.first.currency);
     return Material(
       color: QueroColors.cream,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(WishlyRadius.xl2),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(WishlyRadius.xl2),
         onTap: () => Navigator.of(context).pushNamed('/list/${list.id}'),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(WishlySpace.s5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: fraunces(24))),
+                  Expanded(child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: fraunces(WishlyText.xl2))),
                   if (list.collaborative) const SharedBadge(),
                 ],
               ),
               if (list.collaborative) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: WishlySpace.s2),
                 MemberAvatars(members: list.members),
               ],
-              const SizedBox(height: 6),
+              const SizedBox(height: WishlySpace.s2),
               Text(list.itemCount == 1 ? '1 item' : '${list.itemCount} itens', style: const TextStyle(color: QueroColors.muted)),
-              const SizedBox(height: 8),
-              Text('Falta comprar $total', style: fraunces(20, color: QueroColors.forest)),
+              const SizedBox(height: WishlySpace.s2),
+              Text('Falta comprar $total', style: fraunces(WishlyText.xl, color: QueroColors.forest)),
               if (bought != null) Text('Já comprado $bought', style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough)),
               Row(
                 children: [
                   if (!list.collaborative && list.shareToken != null)
-                    const Text('Link público', style: TextStyle(color: QueroColors.accent, fontWeight: FontWeight.w700, fontSize: 12)),
+                    const Text('Link público', style: TextStyle(color: QueroColors.accent, fontWeight: FontWeight.w700, fontSize: WishlyText.xs)),
                   const Spacer(),
                   if (list.isOwner) ...[
                     TextButton(onPressed: () => _rename(list), child: const Text('Renomear')),
@@ -253,13 +254,13 @@ Future<String?> _askName(BuildContext context, {required String title, required 
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text(title, style: fraunces(24)),
+      title: Text(title, style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Nome da lista')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: const Text('Salvar'),
         ),
       ],

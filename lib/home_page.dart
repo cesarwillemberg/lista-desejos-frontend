@@ -11,6 +11,7 @@ import 'list_sidebar.dart';
 import 'members_dialog.dart';
 import 'widgets/add_form.dart';
 import 'widgets/edit_dialog.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/item_card.dart';
 import 'widgets/skeleton.dart';
 
@@ -153,13 +154,13 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        title: Text('Excluir este item?', style: fraunces(24)),
+        title: Text('Excluir este item?', style: fraunces(WishlyText.xl2)),
         content: Text('“${item.name}” sai da lista.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: Colors.white),
+            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: WishlyColor.white),
             child: const Text('Excluir'),
           ),
         ],
@@ -232,13 +233,13 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        title: Text('Compartilhar', style: fraunces(26)),
+        title: Text('Compartilhar', style: fraunces(WishlyText.xl2)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text('Quem abrir o link vê a lista e pode marcar “Já comprei”, sem entrar na sua conta.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: WishlySpace.s3),
             SelectableText(link, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
@@ -289,8 +290,8 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     final name = _list?.name ?? _snapshot.title ?? 'Lista';
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 980;
-        final narrow = constraints.maxWidth < 600;
+        final wide = constraints.maxWidth >= WishlyBreak.lg;
+        final narrow = constraints.maxWidth < WishlyBreak.sm;
         final canEdit = _list?.canEdit ?? false;
         final isOwner = _list?.isOwner == true;
         final board = _Board(
@@ -347,7 +348,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
                 ? FloatingActionButton.extended(
                     onPressed: () => _openAdd(api, wide: false),
                     backgroundColor: QueroColors.accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: WishlyColor.white,
                     icon: const Icon(Icons.add),
                     label: const Text('Adicionar item'),
                   )
@@ -386,13 +387,13 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         final controller = TextEditingController();
         return AlertDialog(
           backgroundColor: QueroColors.cream,
-          title: Text('Já comprei', style: fraunces(26)),
+          title: Text('Já comprei', style: fraunces(WishlyText.xl2)),
           content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'Seu nome (opcional)')),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () => Navigator.pop(context, controller.text.trim()),
-              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
               child: const Text('Reservar'),
             ),
           ],
@@ -454,13 +455,13 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        title: Text('Excluir “${list.name}”?', style: fraunces(24)),
+        title: Text('Excluir “${list.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('A lista e os itens saem da sua conta. O link compartilhado deixa de funcionar.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: Colors.white),
+            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: WishlyColor.white),
             child: const Text('Excluir'),
           ),
         ],
@@ -512,7 +513,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         isScrollControlled: true,
         backgroundColor: QueroColors.paper,
         builder: (context) => Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+          padding: EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s4, WishlySpace.s5, WishlySpace.s5 + MediaQuery.viewInsetsOf(context).bottom),
           child: panel,
         ),
       );
@@ -522,10 +523,10 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       context: context,
       builder: (context) => Dialog(
         backgroundColor: QueroColors.paper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Padding(padding: const EdgeInsets.fromLTRB(24, 20, 24, 24), child: panel),
+          constraints: const BoxConstraints(maxWidth: WishlySize.sheet),
+          child: Padding(padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s5, WishlySpace.s6, WishlySpace.s6), child: panel),
         ),
       ),
     );
@@ -538,13 +539,13 @@ Future<String?> _askListName(BuildContext context, {String title = 'Nova lista',
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text(title, style: fraunces(24)),
+      title: Text(title, style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Nome da lista')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: Text(confirm),
         ),
       ],
@@ -617,7 +618,7 @@ class _Board extends StatelessWidget {
   Widget build(BuildContext context) {
     if (narrow) return _narrowBoard();
     return Padding(
-      padding: EdgeInsets.fromLTRB(wide ? 28 : 16, wide ? 20 : 8, wide ? 28 : 16, 8),
+      padding: EdgeInsets.fromLTRB(wide ? WishlySpace.s8 : WishlySpace.s4, wide ? WishlySpace.s5 : WishlySpace.s2, wide ? WishlySpace.s8 : WishlySpace.s4, WishlySpace.s2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -627,13 +628,13 @@ class _Board extends StatelessWidget {
               children: [
                 if (onMenu != null) IconButton(onPressed: onMenu, tooltip: 'Listas', icon: const Icon(Icons.menu)),
                 if (!wide && onMenu == null) IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
-                Expanded(child: Text(wide ? 'Itens' : title, style: fraunces(wide ? 32 : 26))),
+                Expanded(child: Text(wide ? 'Itens' : title, style: fraunces(wide ? WishlyText.xl3 : WishlyText.xl2))),
                 if (wide && onAdd != null)
                   FilledButton.icon(
                     onPressed: onAdd,
                     icon: const Icon(Icons.add),
                     label: const Text('Adicionar item'),
-                    style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+                    style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
                   ),
                 if (onMembers != null) IconButton(onPressed: onMembers, tooltip: 'Membros', icon: const Icon(Icons.group_outlined)),
                 if (onCategories != null) IconButton(onPressed: onCategories, tooltip: 'Categorias', icon: const Icon(Icons.category_outlined)),
@@ -643,7 +644,7 @@ class _Board extends StatelessWidget {
             ),
           ),
           if (!wide) _TotalBlock(snapshot: snapshot, onDark: false),
-          const SizedBox(height: 8),
+          const SizedBox(height: WishlySpace.s2),
           Expanded(child: _content()),
         ],
       ),
@@ -662,10 +663,10 @@ class _Board extends StatelessWidget {
             backgroundColor: QueroColors.paper,
             surfaceTintColor: QueroColors.paper,
             foregroundColor: QueroColors.ink,
-            elevation: 0,
-            scrolledUnderElevation: 0,
+            elevation: WishlyElevation.none,
+            scrolledUnderElevation: WishlyElevation.none,
             toolbarHeight: kToolbarHeight,
-            expandedHeight: kToolbarHeight + 92,
+            expandedHeight: kToolbarHeight + WishlySize.headerExtra,
             leading: IconButton(onPressed: onMenu, tooltip: 'Listas', icon: const Icon(Icons.menu)),
             actions: [
               if (onShare != null) IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
@@ -702,12 +703,12 @@ class _Board extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s1, WishlySpace.s4, WishlySpace.s2),
               child: _TotalBlock(snapshot: snapshot, onDark: false),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 108),
+            padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s1, WishlySpace.s4, WishlySpace.s16 + WishlySpace.s12),
             sliver: _narrowBody(),
           ),
         ],
@@ -726,8 +727,8 @@ class _Board extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(error!, textAlign: TextAlign.center)),
-              const SizedBox(height: 16),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s6), child: Text(error!, textAlign: TextAlign.center)),
+              const SizedBox(height: WishlySpace.s4),
               OutlinedButton(onPressed: onReload, child: const Text('Tentar de novo')),
             ],
           ),
@@ -737,7 +738,7 @@ class _Board extends StatelessWidget {
     if (items.isEmpty && categories.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center)),
+        child: const EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.'),
       );
     }
     if (categories.isEmpty) {
@@ -746,11 +747,11 @@ class _Board extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(child: _hideChip()),
           if (shown.isEmpty)
-            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('Nada por aqui ainda')))
+            const SliverFillRemaining(hasScrollBody: false, child: EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.'))
           else
             SliverList.separated(
               itemCount: shown.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 14),
+              separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
               itemBuilder: (context, index) => _card(shown[index]),
             ),
         ],
@@ -776,20 +777,20 @@ class _Board extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(error!, textAlign: TextAlign.center)),
-            const SizedBox(height: 16),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s6), child: Text(error!, textAlign: TextAlign.center)),
+            const SizedBox(height: WishlySpace.s4),
             OutlinedButton(onPressed: onReload, child: const Text('Tentar de novo')),
           ],
         ),
       );
     }
     if (items.isEmpty && categories.isEmpty) {
-      return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: [SizedBox(height: 240, child: Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center)))]));
+      return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')]));
     }
     final shown = sortedWishItems(hidePurchased ? items.where((item) => !item.purchased) : items);
     if (categories.isEmpty) {
       final body = shown.isEmpty
-          ? const Center(child: Text('Nada por aqui ainda'))
+          ? const EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')
           : wide
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -798,7 +799,7 @@ class _Board extends StatelessWidget {
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: shown.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 14),
+                  separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
                   itemBuilder: (context, index) => _card(shown[index]),
                 );
       return _pull(Column(children: [_hideChip(), Expanded(child: body)]));
@@ -909,13 +910,13 @@ class _CategoryManagerState extends State<_CategoryManager> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: QueroColors.cream,
-        title: Text('Excluir “${category.name}”?', style: fraunces(24)),
+        title: Text('Excluir “${category.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('Os itens dessa categoria passam para Sem categoria.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: Colors.white),
+            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: WishlyColor.white),
             child: const Text('Excluir'),
           ),
         ],
@@ -951,9 +952,9 @@ class _CategoryManagerState extends State<_CategoryManager> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text('Categorias', style: fraunces(26)),
+      title: Text('Categorias', style: fraunces(WishlyText.xl2)),
       content: SizedBox(
-        width: 420,
+        width: WishlySize.field,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -968,9 +969,9 @@ class _CategoryManagerState extends State<_CategoryManager> {
                   TextButton(onPressed: () => _delete(_categories[i]), child: const Text('Excluir', style: TextStyle(color: QueroColors.danger))),
                 ],
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: WishlySpace.s2),
             TextField(controller: _name, decoration: const InputDecoration(hintText: 'Nova categoria'), onSubmitted: (_) => _add()),
-            if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: QueroColors.danger))),
+            if (_error != null) Padding(padding: const EdgeInsets.only(top: WishlySpace.s2), child: Text(_error!, style: const TextStyle(color: QueroColors.danger))),
           ],
         ),
       ),
@@ -978,7 +979,7 @@ class _CategoryManagerState extends State<_CategoryManager> {
         TextButton(onPressed: _add, child: const Text('Adicionar')),
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: const Text('Fechar'),
         ),
       ],
@@ -992,13 +993,13 @@ Future<String?> _askCategoryName(BuildContext context) async {
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text('Renomear', style: fraunces(24)),
+      title: Text('Renomear', style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: const Text('Salvar'),
         ),
       ],
@@ -1022,25 +1023,25 @@ class _CollapsingListTitle extends StatelessWidget {
       children: [
         if (expanded > 0.2)
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 6,
+            left: WishlySpace.s4,
+            right: WishlySpace.s4,
+            bottom: WishlySpace.s2,
             child: Opacity(
               opacity: expanded,
-              child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, softWrap: true, style: fraunces(32, height: 1.12)),
+              child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, softWrap: true, style: fraunces(WishlyText.xl3, height: WishlyText.snug)),
             ),
           ),
         if (expanded < 0.55)
           Positioned(
-            left: 56,
-            right: 104,
+            left: WishlySize.collapsedStart,
+            right: WishlySize.collapsedEnd,
             top: top,
             height: kToolbarHeight,
             child: Align(
               alignment: Alignment.centerLeft,
               child: Opacity(
                 opacity: (1 - expanded).clamp(0.0, 1.0),
-                child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: fraunces(18, height: 1.1)),
+                child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: fraunces(WishlyText.lg, height: WishlyText.tight)),
               ),
             ),
           ),
@@ -1062,20 +1063,20 @@ class _TotalBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('FALTA COMPRAR', style: TextStyle(color: label, fontSize: 12, letterSpacing: 1.4, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
+        Text('FALTA COMPRAR', style: TextStyle(color: label, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
+        const SizedBox(height: WishlySpace.s2),
         if (totals.isEmpty)
-          Text(snapshot.purchasedTotals.isEmpty ? 'Sem preços para somar' : 'Nada pendente', style: TextStyle(color: value, fontSize: 18, fontWeight: FontWeight.w600))
+          Text(snapshot.purchasedTotals.isEmpty ? 'Sem preços para somar' : 'Nada pendente', style: TextStyle(color: value, fontSize: WishlyText.lg, fontWeight: FontWeight.w600))
         else
           for (final total in totals)
-            Text(formatMoney(total.amount, total.currency.isEmpty ? null : total.currency), style: fraunces(onDark ? 32 : 26, color: value)),
+            Text(formatMoney(total.amount, total.currency.isEmpty ? null : total.currency), style: fraunces(onDark ? WishlyText.xl3 : WishlyText.xl2, color: value)),
         if (snapshot.purchasedTotals.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text('JÁ COMPRADO', style: TextStyle(color: label, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+          const SizedBox(height: WishlySpace.s2),
+          Text('JÁ COMPRADO', style: TextStyle(color: label, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
           for (final total in snapshot.purchasedTotals)
             Text(
               formatMoney(total.amount, total.currency.isEmpty ? null : total.currency),
-              style: TextStyle(color: label, fontSize: onDark ? 18 : 16, decoration: TextDecoration.lineThrough),
+              style: TextStyle(color: label, fontSize: onDark ? WishlyText.lg : WishlyText.base, decoration: TextDecoration.lineThrough),
             ),
         ],
       ],

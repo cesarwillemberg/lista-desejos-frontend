@@ -58,19 +58,19 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 900;
+        final wide = constraints.maxWidth >= WishlyBreak.lg;
         final form = _form(onDark: false);
         if (!wide) {
           return Scaffold(
             backgroundColor: QueroColors.paper,
             body: SafeArea(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+                padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s10, WishlySpace.s6, WishlySpace.s6),
                 children: [
-                  Text('Wishly', style: fraunces(48, style: FontStyle.italic)),
-                  const SizedBox(height: 8),
-                  const Text('Entre para guardar suas listas neste aparelho.', style: TextStyle(color: QueroColors.muted, height: 1.4)),
-                  const SizedBox(height: 28),
+                  Text('Wishly', style: fraunces(WishlyText.xl5, style: FontStyle.italic)),
+                  const SizedBox(height: WishlySpace.s2),
+                  const Text('Entre para guardar suas listas neste aparelho.', style: TextStyle(color: QueroColors.muted, height: WishlyText.body)),
+                  const SizedBox(height: WishlySpace.s8),
                   form,
                 ],
               ),
@@ -85,22 +85,22 @@ class _AuthPageState extends State<AuthPage> {
                 child: ColoredBox(
                   color: QueroColors.ink,
                   child: Padding(
-                    padding: const EdgeInsets.all(48),
+                    padding: const EdgeInsets.all(WishlySpace.s12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Wishly', style: fraunces(64, style: FontStyle.italic, color: QueroColors.cream)),
-                        const SizedBox(height: 12),
+                        Text('Wishly', style: fraunces(WishlyText.xl6, style: FontStyle.italic, color: QueroColors.cream)),
+                        const SizedBox(height: WishlySpace.s3),
                         const Text(
                           'Suas listas de desejos, com foto e preço da loja. Compartilhe um link para ninguém comprar o mesmo presente.',
-                          style: TextStyle(color: WishlyTokens.onInk, fontSize: 18, height: 1.4),
+                          style: TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.lg, height: WishlyText.body),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              Expanded(child: Center(child: SizedBox(width: 420, child: form))),
+              Expanded(child: Center(child: SizedBox(width: WishlySize.field, child: form))),
             ],
           ),
         );
@@ -114,8 +114,8 @@ class _AuthPageState extends State<AuthPage> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(_creating ? 'CRIAR CONTA' : 'ENTRAR', style: TextStyle(color: label, letterSpacing: 1.4, fontWeight: FontWeight.w700, fontSize: 12)),
-        const SizedBox(height: 16),
+        Text(_creating ? 'CRIAR CONTA' : 'ENTRAR', style: TextStyle(color: label, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700, fontSize: WishlyText.xs)),
+        const SizedBox(height: WishlySpace.s4),
         TextField(
           controller: _email,
           keyboardType: TextInputType.emailAddress,
@@ -123,7 +123,7 @@ class _AuthPageState extends State<AuthPage> {
           decoration: _decoration('E-mail', onDark),
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: WishlySpace.s3),
         TextField(
           controller: _password,
           obscureText: true,
@@ -132,21 +132,21 @@ class _AuthPageState extends State<AuthPage> {
           onSubmitted: (_) => _submit(),
         ),
         if (_error != null) ...[
-          const SizedBox(height: 12),
-          Text(_error!, style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, height: 1.35)),
+          const SizedBox(height: WishlySpace.s3),
+          Text(_error!, style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, height: WishlyText.body)),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: WishlySpace.s4),
         FilledButton(
           onPressed: _busy ? null : _submit,
           style: FilledButton.styleFrom(
             backgroundColor: QueroColors.accent,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            foregroundColor: WishlyColor.white,
+            minimumSize: const Size.fromHeight(WishlySpace.s12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
           ),
           child: Text(_busy ? 'Aguarde…' : (_creating ? 'Criar conta' : 'Entrar'), style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: WishlySpace.s2),
         TextButton(
           onPressed: _busy ? null : () => setState(() { _creating = !_creating; _error = null; }),
           child: Text(_creating ? 'Já tem conta? Entrar' : 'Não tem conta? Criar conta'),
@@ -156,15 +156,15 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   InputDecoration _decoration(String hint, bool onDark) {
-    final border = onDark ? Colors.transparent : QueroColors.line;
+    final border = onDark ? WishlyColor.transparent : QueroColors.line;
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: onDark ? QueroColors.inkSoft : Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: QueroColors.accent, width: 1.4)),
+      fillColor: onDark ? QueroColors.inkSoft : WishlyColor.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: WishlySpace.s4, vertical: WishlySpace.s3),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: BorderSide(color: border)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: BorderSide(color: border)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: const BorderSide(color: QueroColors.accent, width: WishlySize.ring)),
     );
   }
 }

@@ -103,13 +103,13 @@ Future<String?> _askCategoryName(BuildContext context) {
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text('Nova categoria', style: fraunces(24)),
+      title: Text('Nova categoria', style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Ex.: Cozinha')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
           child: const Text('Criar'),
         ),
       ],
@@ -146,26 +146,26 @@ class AddForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelColor = onDark ? WishlyTokens.onInkLabel : QueroColors.muted;
-    final fill = onDark ? QueroColors.inkSoft : Colors.white;
+    final fill = onDark ? QueroColors.inkSoft : WishlyColor.white;
     final text = onDark ? QueroColors.cream : QueroColors.ink;
     final hint = onDark ? WishlyTokens.onInkHint : WishlyTokens.muted;
-    final border = onDark ? Colors.transparent : QueroColors.line;
+    final border = onDark ? WishlyColor.transparent : QueroColors.line;
 
     InputDecoration decoration(String hintText) {
       return InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: hint, fontSize: 15),
+        hintStyle: TextStyle(color: hint, fontSize: WishlyText.base),
         filled: true,
         fillColor: fill,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: WishlySpace.s4, vertical: WishlySpace.s3),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: BorderSide(color: border)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(WishlyRadius.lg),
           borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: QueroColors.accent, width: 1.4),
+          borderRadius: BorderRadius.circular(WishlyRadius.lg),
+          borderSide: const BorderSide(color: QueroColors.accent, width: WishlySize.ring),
         ),
       );
     }
@@ -173,40 +173,40 @@ class AddForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('NOVO ITEM', style: TextStyle(color: labelColor, fontSize: 12, letterSpacing: 1.4, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 14),
-        Text('Nome', style: TextStyle(color: labelColor, fontSize: 13)),
-        const SizedBox(height: 6),
+        Text('NOVO ITEM', style: TextStyle(color: labelColor, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
+        const SizedBox(height: WishlySpace.s4),
+        Text('Nome', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
+        const SizedBox(height: WishlySpace.s2),
         TextField(
           controller: name,
           enabled: !busy,
           textInputAction: TextInputAction.next,
-          style: TextStyle(color: text, fontSize: 16),
+          style: TextStyle(color: text, fontSize: WishlyText.base),
           cursorColor: QueroColors.accent,
           decoration: decoration('Ex.: Kindle Paperwhite'),
         ),
-        const SizedBox(height: 14),
-        Text('Link do produto', style: TextStyle(color: labelColor, fontSize: 13)),
-        const SizedBox(height: 6),
+        const SizedBox(height: WishlySpace.s4),
+        Text('Link do produto', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
+        const SizedBox(height: WishlySpace.s2),
         TextField(
           controller: url,
           enabled: !busy,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => onSubmit(),
-          style: TextStyle(color: text, fontSize: 16),
+          style: TextStyle(color: text, fontSize: WishlyText.base),
           cursorColor: QueroColors.accent,
           decoration: decoration('https://'),
         ),
         if (categories.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Text('Categoria', style: TextStyle(color: labelColor, fontSize: 13)),
-          const SizedBox(height: 6),
+          const SizedBox(height: WishlySpace.s4),
+          Text('Categoria', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
+          const SizedBox(height: WishlySpace.s2),
           DropdownButton<String>(
             value: categoryId ?? '',
             isExpanded: true,
-            dropdownColor: onDark ? QueroColors.inkSoft : Colors.white,
-            style: TextStyle(color: text, fontSize: 16),
+            dropdownColor: onDark ? QueroColors.inkSoft : WishlyColor.white,
+            style: TextStyle(color: text, fontSize: WishlyText.base),
             items: [
               const DropdownMenuItem(value: '', child: Text('Sem categoria')),
               for (final category in categories) DropdownMenuItem(value: category.id, child: Text(category.name)),
@@ -224,38 +224,38 @@ class AddForm extends StatelessWidget {
                   },
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: WishlySpace.s2),
         Text(
           'A gente abre a página da loja e traz a foto e o preço.',
-          style: TextStyle(color: labelColor, fontSize: 13, height: 1.35),
+          style: TextStyle(color: labelColor, fontSize: WishlyText.sm, height: WishlyText.body),
         ),
         if (error != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: WishlySpace.s3),
           Text(
             error!,
-            style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, fontSize: 13, height: 1.35),
+            style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, fontSize: WishlyText.sm, height: WishlyText.body),
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: WishlySpace.s4),
         FilledButton(
           onPressed: busy ? null : onSubmit,
           style: FilledButton.styleFrom(
             backgroundColor: QueroColors.accent,
-            disabledBackgroundColor: QueroColors.accent.withValues(alpha: 0.55),
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            disabledBackgroundColor: QueroColors.accent.withValues(alpha: WishlyOpacity.disabled),
+            foregroundColor: WishlyColor.white,
+            minimumSize: const Size.fromHeight(WishlySpace.s12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
           ),
           child: busy
               ? const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                    SizedBox(width: 10),
-                    Text('Buscando foto e preço…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    SizedBox(width: WishlyIcon.sm, height: WishlyIcon.sm, child: CircularProgressIndicator(strokeWidth: WishlySize.spinner, color: WishlyColor.white)),
+                    SizedBox(width: WishlySpace.s2),
+                    Text('Buscando foto e preço…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: WishlyText.base)),
                   ],
                 )
-              : const Text('Adicionar à lista', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              : const Text('Adicionar à lista', style: TextStyle(fontWeight: FontWeight.w600, fontSize: WishlyText.base)),
         ),
       ],
     );

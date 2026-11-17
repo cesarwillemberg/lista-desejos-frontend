@@ -62,44 +62,44 @@ class _MembersDialogState extends State<MembersDialog> {
     final userId = SessionScope.of(context).user?.id;
     return Dialog(
       backgroundColor: QueroColors.paper,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: WishlySize.dialog, maxHeight: WishlySize.dialogTall),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s5, WishlySpace.s6, WishlySpace.s5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('Membros', style: fraunces(28))),
+                  Expanded(child: Text('Membros', style: fraunces(WishlyText.xl3))),
                   IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                 ],
               ),
               Text('Colaborar em ${_list.name}', style: const TextStyle(color: QueroColors.muted)),
-              const SizedBox(height: 12),
+              const SizedBox(height: WishlySpace.s3),
               MemberAvatars(members: _list.members),
-              const SizedBox(height: 8),
+              const SizedBox(height: WishlySpace.s2),
               Expanded(
                 child: ListView(
                   children: [
                     for (final member in _list.members) _memberTile(member, userId),
                     if (_list.isOwner) ...[
-                      const SizedBox(height: 8),
-                      Text('Convidar', style: fraunces(22)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: WishlySpace.s2),
+                      Text('Convidar', style: fraunces(WishlyText.xl)),
+                      const SizedBox(height: WishlySpace.s2),
                       _inviteBlock('editor', 'Pode editar', _list.inviteEditorUrl),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: WishlySpace.s3),
                       _inviteBlock('viewer', 'Só pode ver', _list.inviteViewerUrl),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: WishlySpace.s4),
                       const Text('Por e-mail', style: TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: WishlySpace.s2),
                       TextField(
                         controller: _email,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(hintText: 'pessoa@email.com'),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: WishlySpace.s2),
                       SegmentedButton<String>(
                         segments: const [
                           ButtonSegment(value: 'editor', label: Text('Pode editar')),
@@ -108,18 +108,18 @@ class _MembersDialogState extends State<MembersDialog> {
                         selected: {_inviteRole},
                         onSelectionChanged: (value) => setState(() => _inviteRole = value.first),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: WishlySpace.s2),
                       Align(
                         alignment: Alignment.centerRight,
                         child: FilledButton(
                           onPressed: _busy ? null : _addEmail,
-                          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+                          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
                           child: const Text('Adicionar'),
                         ),
                       ),
                     ],
                     if (_error != null) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: WishlySpace.s2),
                       Text(_error!, style: const TextStyle(color: QueroColors.danger)),
                     ],
                   ],
@@ -135,20 +135,20 @@ class _MembersDialogState extends State<MembersDialog> {
   Widget _memberTile(ListMember member, String? userId) {
     final mine = userId != null && member.userId == userId;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: WishlySpace.s2),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: QueroColors.ink,
-            child: Text(member.initials, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            child: Text(member.initials, style: const TextStyle(color: WishlyColor.white, fontWeight: FontWeight.w700)),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: WishlySpace.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(member.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(roleLabel(member.role), style: const TextStyle(color: QueroColors.muted, fontSize: 12)),
+                Text(roleLabel(member.role), style: const TextStyle(color: QueroColors.muted, fontSize: WishlyText.xs)),
               ],
             ),
           ),
@@ -170,17 +170,17 @@ class _MembersDialogState extends State<MembersDialog> {
 
   Widget _inviteBlock(String role, String title, String? url) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: QueroColors.cream, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(color: QueroColors.cream, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(WishlySpace.s3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(url ?? 'Link desativado', style: const TextStyle(color: QueroColors.muted, fontSize: 13)),
+            const SizedBox(height: WishlySpace.s1),
+            Text(url ?? 'Link desativado', style: const TextStyle(color: QueroColors.muted, fontSize: WishlyText.sm)),
             Wrap(
-              spacing: 4,
+              spacing: WishlySpace.s1,
               children: [
                 if (url == null)
                   TextButton(onPressed: _busy ? null : () => _setLink(role, create: true), child: const Text('Criar link'))

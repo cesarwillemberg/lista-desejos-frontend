@@ -12,7 +12,7 @@ class PlaceholderArt extends StatelessWidget {
       child: CustomPaint(
         painter: const _HatchPainter(),
         child: Center(
-          child: Icon(Icons.local_mall_outlined, size: 36, color: QueroColors.ink.withValues(alpha: 0.45)),
+          child: Icon(Icons.local_mall_outlined, size: WishlySize.compact, color: QueroColors.ink.withValues(alpha: WishlyOpacity.placeholder)),
         ),
       ),
     );
@@ -26,8 +26,8 @@ class _HatchPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = WishlyTokens.placeholderLine
-      ..strokeWidth = 1;
-    for (double x = -size.height; x < size.width; x += 14) {
+      ..strokeWidth = WishlySize.hairline;
+    for (double x = -size.height; x < size.width; x += WishlySize.hatch) {
       canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);
     }
   }
