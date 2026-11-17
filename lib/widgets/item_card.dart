@@ -202,17 +202,25 @@ class _ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.imageUrl == null || item.imageUrl!.isEmpty) return const PlaceholderArt();
-    return Image.network(
-      proxyUrl,
-      headers: headers,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stack) {
-        return Image.network(
-          item.imageUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stack) => const PlaceholderArt(),
-        );
-      },
+    return ColoredBox(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Image.network(
+          proxyUrl,
+          headers: headers,
+          fit: BoxFit.contain,
+          alignment: Alignment.center,
+          errorBuilder: (context, error, stack) {
+            return Image.network(
+              item.imageUrl!,
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              errorBuilder: (context, error, stack) => const PlaceholderArt(),
+            );
+          },
+        ),
+      ),
     );
   }
 }

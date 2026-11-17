@@ -12,6 +12,7 @@ class WishItem {
     this.store,
     this.message,
     this.listId,
+    this.categoryId,
     this.reserved = false,
     this.reservedLabel,
     this.reservedByMe = false,
@@ -27,6 +28,7 @@ class WishItem {
   final String status;
   final String? message;
   final String? listId;
+  final String? categoryId;
   final bool reserved;
   final String? reservedLabel;
   final bool reservedByMe;
@@ -47,6 +49,7 @@ class WishItem {
       status: (json['status'] as String?) ?? 'failed',
       message: json['message'] as String?,
       listId: json['list_id'] as String?,
+      categoryId: json['category_id'] as String?,
       reserved: json['reserved'] == true,
       reservedLabel: json['reserved_label'] as String?,
       reservedByMe: json['reserved_by_me'] == true,
@@ -63,12 +66,34 @@ class MoneyTotal {
   final double amount;
 }
 
+class WishCategory {
+  const WishCategory({required this.id, required this.name, required this.position});
+
+  final String id;
+  final String name;
+  final int position;
+
+  factory WishCategory.fromJson(Map<String, dynamic> json) {
+    return WishCategory(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      position: (json['position'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class WishlistSnapshot {
-  const WishlistSnapshot({required this.items, required this.unpricedCount, this.title});
+  const WishlistSnapshot({
+    required this.items,
+    required this.unpricedCount,
+    this.title,
+    this.categories = const [],
+  });
 
   final List<WishItem> items;
   final int unpricedCount;
   final String? title;
+  final List<WishCategory> categories;
 
   List<MoneyTotal> get totals {
     final buckets = <String, double>{};
@@ -109,12 +134,16 @@ class WishList {
     required this.totals,
     this.shareToken,
     this.sharePath,
+    this.shortCode,
+    this.shortUrl,
   });
 
   final String id;
   final String name;
   final String? shareToken;
   final String? sharePath;
+  final String? shortCode;
+  final String? shortUrl;
   final int itemCount;
   final int unpricedCount;
   final List<MoneyTotal> totals;
@@ -134,6 +163,8 @@ class WishList {
       name: json['name'] as String,
       shareToken: json['share_token'] as String?,
       sharePath: json['share_path'] as String?,
+      shortCode: json['short_code'] as String?,
+      shortUrl: json['short_url'] as String?,
       itemCount: (json['item_count'] as num?)?.toInt() ?? 0,
       unpricedCount: (json['unpriced_count'] as num?)?.toInt() ?? 0,
       totals: totals,

@@ -6,6 +6,7 @@ import 'models.dart';
 import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'grouped_items.dart';
 import 'widgets/item_card.dart';
 
 class SharedPage extends StatefulWidget {
@@ -166,7 +167,8 @@ class _SharedPageState extends State<SharedPage> {
     if (_loading) return const Center(child: CircularProgressIndicator(color: QueroColors.ink));
     if (_error != null) return Center(child: Text(_error!, textAlign: TextAlign.center));
     final items = _snapshot?.items ?? [];
-    if (items.isEmpty) return Center(child: Text('Nada por aqui ainda', style: fraunces(28)));
+    final categories = _snapshot?.categories ?? const <WishCategory>[];
+    if (items.isEmpty && categories.isEmpty) return Center(child: Text('Nada por aqui ainda', style: fraunces(28)));
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
@@ -184,6 +186,9 @@ class _SharedPageState extends State<SharedPage> {
             onReserve: () => _reserve(item),
             onUnreserve: item.reservedByMe ? () => _unreserve(item) : null,
           );
+        }
+        if (categories.isNotEmpty) {
+          return GroupedItems(categories: categories, items: items, wide: wide, cardBuilder: (item, fill) => card(item, fill: fill));
         }
         if (!wide) {
           return ListView.separated(

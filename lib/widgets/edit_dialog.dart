@@ -5,18 +5,26 @@ import '../models.dart';
 import '../money.dart';
 import '../theme.dart';
 
-Future<WishItem?> showEditDialog(BuildContext context, {required QueroApi api, required WishItem item}) {
+Future<WishItem?> showEditDialog(
+  BuildContext context, {
+  required QueroApi api,
+  required WishItem item,
+  List<WishCategory> categories = const [],
+  Future<WishCategory> Function(String name)? onCreateCategory,
+}) {
   return showDialog<WishItem>(
     context: context,
-    builder: (context) => _EditDialog(api: api, item: item),
+    builder: (context) => _EditDialog(api: api, item: item, categories: categories, onCreateCategory: onCreateCategory),
   );
 }
 
 class _EditDialog extends StatefulWidget {
-  const _EditDialog({required this.api, required this.item});
+  const _EditDialog({required this.api, required this.item, this.categories = const [], this.onCreateCategory});
 
   final QueroApi api;
   final WishItem item;
+  final List<WishCategory> categories;
+  final Future<WishCategory> Function(String name)? onCreateCategory;
 
   @override
   State<_EditDialog> createState() => _EditDialogState();
@@ -27,6 +35,8 @@ class _EditDialogState extends State<_EditDialog> {
   late final TextEditingController _image;
   late final TextEditingController _price;
   late String _currency;
+  String? _categoryId;
+  late List<WishCategory> _categories;
   bool _busy = false;
   String? _error;
 
@@ -38,6 +48,8 @@ class _EditDialogState extends State<_EditDialog> {
     _price = TextEditingController(text: widget.item.price == null ? '' : _priceField(widget.item.price!));
     final current = (widget.item.currency ?? 'BRL').toUpperCase();
     _currency = _currencies.contains(current) ? current : 'BRL';
+    _categories = widget.categories;
+    _categoryId = widget.item.categoryId;
   }
 
   @override
@@ -81,6 +93,8 @@ class _EditDialogState extends State<_EditDialog> {
         price: price,
         clearPrice: priceText.isEmpty,
         currency: _currency,
+        setCategory: _categories.isNotEmpty,
+        categoryId: _categoryId,
       );
       if (!mounted) return;
       Navigator.of(context).pop(updated);
@@ -120,6 +134,36 @@ class _EditDialogState extends State<_EditDialog> {
               const SizedBox(height: 14),
               const Text('Moeda', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
               const SizedBox(height: 6),
+              if (_categories.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('Categoria', style: TextStyle(fontSize: 13, color: QueroColors.muted)),
+                const SizedBox(height: 6),
+                DropdownButton<String>(
+                  value: _categoryId ?? '',
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(value: '', child: Text('Sem categoria')),
+                    for (final category in _categories) DropdownMenuItem(value: category.id, child: Text(category.name)),
+                    const DropdownMenuItem(value: '__new__', child: Text('Nova categoria…')),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (value) async {
+                          if (value == '__new__') {
+                            final created = await _askCategoryName(context);
+                            if (created == null || created.isEmpty || widget.onCreateCategory == null) return;
+                            final category = await widget.onCreateCategory!(created);
+                            if (!mounted) return;
+                            setState(() {
+                              _categories = [..._categories, category];
+                              _categoryId = category.id;
+                            });
+                            return;
+                          }
+                          setState(() => _categoryId = value == null || value.isEmpty ? null : value);
+                        },
+                ),
+              ],
               DropdownButton<String>(
                 value: _currency,
                 isExpanded: true,
@@ -158,6 +202,26 @@ class _EditDialogState extends State<_EditDialog> {
       ),
     );
   }
+}
+
+Future<String?> _askCategoryName(BuildContext context) {
+  final controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: QueroColors.cream,
+      title: Text('Nova categoria', style: fraunces(24)),
+      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Ex.: Cozinha')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          child: const Text('Criar'),
+        ),
+      ],
+    ),
+  );
 }
 
 const _currencies = ['BRL', 'USD', 'EUR', 'GBP'];

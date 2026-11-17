@@ -5,10 +5,20 @@ import '../models.dart';
 import '../theme.dart';
 
 class AddPanel extends StatefulWidget {
-  const AddPanel({super.key, required this.api, required this.listId, required this.onCreated, this.onDark = false});
+  const AddPanel({
+    super.key,
+    required this.api,
+    required this.listId,
+    required this.onCreated,
+    this.categories = const [],
+    this.onCategoryCreated,
+    this.onDark = false,
+  });
 
   final QueroApi api;
   final String listId;
+  final List<WishCategory> categories;
+  final ValueChanged<WishCategory>? onCategoryCreated;
   final ValueChanged<WishItem> onCreated;
   final bool onDark;
 
@@ -19,6 +29,7 @@ class AddPanel extends StatefulWidget {
 class _AddPanelState extends State<AddPanel> {
   final _name = TextEditingController();
   final _url = TextEditingController();
+  String? _categoryId;
   bool _busy = false;
   String? _error;
 
@@ -45,11 +56,14 @@ class _AddPanelState extends State<AddPanel> {
       _error = null;
     });
     try {
-      final item = await widget.api.createItem(listId: widget.listId, name: name, url: url);
+      final item = await widget.api.createItem(listId: widget.listId, name: name, url: url, categoryId: _categoryId);
       if (!mounted) return;
       _name.clear();
       _url.clear();
-      setState(() => _busy = false);
+      setState(() {
+        _busy = false;
+        _categoryId = null;
+      });
       widget.onCreated(item);
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -62,8 +76,45 @@ class _AddPanelState extends State<AddPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return AddForm(name: _name, url: _url, busy: _busy, error: _error, onDark: widget.onDark, onSubmit: _submit);
+    return AddForm(
+      name: _name,
+      url: _url,
+      busy: _busy,
+      error: _error,
+      onDark: widget.onDark,
+      onSubmit: _submit,
+      categories: widget.categories,
+      categoryId: _categoryId,
+      onCategory: (id) => setState(() => _categoryId = id),
+      onCreateCategory: widget.onCategoryCreated == null
+          ? null
+          : (name) async {
+              final created = await widget.api.createCategory(widget.listId, name);
+              widget.onCategoryCreated!(created);
+              if (mounted) setState(() => _categoryId = created.id);
+            },
+    );
   }
+}
+
+Future<String?> _askCategoryName(BuildContext context) {
+  final controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: QueroColors.cream,
+      title: Text('Nova categoria', style: fraunces(24)),
+      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Ex.: Cozinha')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+          child: const Text('Criar'),
+        ),
+      ],
+    ),
+  );
 }
 
 class AddForm extends StatelessWidget {
@@ -75,6 +126,10 @@ class AddForm extends StatelessWidget {
     required this.onSubmit,
     this.error,
     this.onDark = false,
+    this.categories = const [],
+    this.categoryId,
+    this.onCategory,
+    this.onCreateCategory,
   });
 
   final TextEditingController name;
@@ -83,6 +138,10 @@ class AddForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final String? error;
   final bool onDark;
+  final List<WishCategory> categories;
+  final String? categoryId;
+  final ValueChanged<String?>? onCategory;
+  final Future<void> Function(String name)? onCreateCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +198,32 @@ class AddForm extends StatelessWidget {
           cursorColor: QueroColors.accent,
           decoration: decoration('https://'),
         ),
+        if (categories.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Text('Categoria', style: TextStyle(color: labelColor, fontSize: 13)),
+          const SizedBox(height: 6),
+          DropdownButton<String>(
+            value: categoryId ?? '',
+            isExpanded: true,
+            dropdownColor: onDark ? QueroColors.inkSoft : Colors.white,
+            style: TextStyle(color: text, fontSize: 16),
+            items: [
+              const DropdownMenuItem(value: '', child: Text('Sem categoria')),
+              for (final category in categories) DropdownMenuItem(value: category.id, child: Text(category.name)),
+              const DropdownMenuItem(value: '__new__', child: Text('Nova categoria…')),
+            ],
+            onChanged: busy
+                ? null
+                : (value) async {
+                    if (value == '__new__') {
+                      final created = await _askCategoryName(context);
+                      if (created != null && created.isNotEmpty) await onCreateCategory?.call(created);
+                      return;
+                    }
+                    onCategory?.call(value == null || value.isEmpty ? null : value);
+                  },
+          ),
+        ],
         const SizedBox(height: 8),
         Text(
           'A gente abre a página da loja e traz a foto e o preço.',

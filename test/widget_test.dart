@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:quero/api.dart';
+import 'package:quero/links.dart';
 import 'package:quero/main.dart';
 import 'package:quero/money.dart';
 import 'package:quero/session.dart';
@@ -16,6 +17,12 @@ void main() {
     expect(parseUserPrice('1.299,90'), 1299.90);
     expect(parseUserPrice('R\$ 584,10'), 584.10);
     expect(parseUserPrice(''), null);
+  });
+
+  test('lê código de link curto e do esquema do app', () {
+    expect(shareCodeFromUri(Uri.parse('https://lista-desejos-backend.onrender.com/s/Ab12cd')), 'Ab12cd');
+    expect(shareCodeFromUri(Uri.parse('quero://s/Ab12cd')), 'Ab12cd');
+    expect(shareCodeFromUri(Uri.parse('https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cd')), null);
   });
 
   testWidgets('mostra entrar e criar conta', (tester) async {

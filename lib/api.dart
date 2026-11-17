@@ -76,7 +76,7 @@ class QueroApi {
   }
 
   Future<List<WishList>> lists() async {
-    final response = await _send('GET', '/api/lists');
+    final response = await _send('GET', '/api/lists', null, null, const Duration(seconds: 20));
     return _lists(_jsonMap(response)['lists']);
   }
 
@@ -110,14 +110,42 @@ class QueroApi {
   }
 
   Future<WishlistSnapshot> listItems(String listId) async {
-    final response = await _send('GET', '/api/lists/$listId/items');
+    final response = await _send('GET', '/api/lists/$listId/items', null, null, const Duration(seconds: 20));
     final body = _jsonMap(response);
     final title = (body['list'] as Map?)?['name'] as String?;
-    return WishlistSnapshot(items: _items(body['items']), unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0, title: title);
+    return WishlistSnapshot(
+      items: _items(body['items']),
+      unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0,
+      title: title,
+      categories: _categories(body['categories']),
+    );
   }
 
-  Future<WishItem> createItem({required String listId, required String name, required String url}) async {
-    final response = await _send('POST', '/api/lists/$listId/items', {'name': name, 'url': url});
+  Future<WishCategory> createCategory(String listId, String name) async {
+    final response = await _send('POST', '/api/lists/$listId/categories', {'name': name});
+    return WishCategory.fromJson(_jsonMap(response));
+  }
+
+  Future<WishCategory> renameCategory(String id, String name) async {
+    final response = await _send('PATCH', '/api/categories/$id', {'name': name});
+    return WishCategory.fromJson(_jsonMap(response));
+  }
+
+  Future<void> deleteCategory(String id) async {
+    await _send('DELETE', '/api/categories/$id');
+  }
+
+  Future<List<WishCategory>> reorderCategories(String listId, List<String> ids) async {
+    final response = await _send('POST', '/api/lists/$listId/categories/reorder', {'ids': ids});
+    return _categories(_jsonMap(response)['categories']);
+  }
+
+  Future<WishItem> createItem({required String listId, required String name, required String url, String? categoryId}) async {
+    final response = await _send('POST', '/api/lists/$listId/items', {
+      'name': name,
+      'url': url,
+      'category_id': ?categoryId,
+    });
     return WishItem.fromJson(_jsonMap(response));
   }
 
@@ -129,6 +157,8 @@ class QueroApi {
     String? currency,
     bool clearPrice = false,
     bool clearImage = false,
+    String? categoryId,
+    bool setCategory = false,
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;
@@ -143,6 +173,7 @@ class QueroApi {
       payload['price'] = price;
     }
     if (currency != null) payload['currency'] = currency;
+    if (setCategory) payload['category_id'] = categoryId;
     final response = await _send('PATCH', '/api/items/$id', payload);
     return WishItem.fromJson(_jsonMap(response));
   }
@@ -165,7 +196,12 @@ class QueroApi {
       if (claims != null && claims.isNotEmpty) 'x-claims': claims,
     });
     final body = _jsonMap(response);
-    return WishlistSnapshot(items: _items(body['items']), unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0, title: (body['list'] as Map?)?['name'] as String?);
+    return WishlistSnapshot(
+      items: _items(body['items']),
+      unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0,
+      title: (body['list'] as Map?)?['name'] as String?,
+      categories: _categories(body['categories']),
+    );
   }
 
   Future<String> reserve(String shareToken, String itemId, {String? name}) async {
@@ -191,6 +227,21 @@ class QueroApi {
     return lists;
   }
 
+  List<WishCategory> _categories(dynamic raw) {
+    final categories = <WishCategory>[];
+    if (raw is List) {
+      for (final entry in raw) {
+        if (entry is Map<String, dynamic>) {
+          categories.add(WishCategory.fromJson(entry));
+        } else if (entry is Map) {
+          categories.add(WishCategory.fromJson(Map<String, dynamic>.from(entry)));
+        }
+      }
+    }
+    categories.sort((a, b) => a.position.compareTo(b.position));
+    return categories;
+  }
+
   List<WishItem> _items(dynamic raw) {
     final items = <WishItem>[];
     if (raw is List) {
@@ -205,7 +256,7 @@ class QueroApi {
     return items;
   }
 
-  Future<http.Response> _send(String method, String path, [Object? body, Map<String, String>? headers]) async {
+  Future<http.Response> _send(String method, String path, [Object? body, Map<String, String>? headers, Duration timeout = const Duration(seconds: 45)]) async {
     final uri = Uri.parse('$root$path');
     final request = http.Request(method, uri)..headers['accept'] = 'application/json';
     final current = token;
@@ -218,8 +269,8 @@ class QueroApi {
       request.body = jsonEncode(body);
     }
     try {
-      final response = await _client.send(request).timeout(const Duration(seconds: 45));
-      final text = await response.stream.bytesToString();
+      final response = await _client.send(request).timeout(timeout);
+      final text = await response.stream.bytesToString().timeout(timeout);
       final wrapped = http.Response(text, response.statusCode, headers: response.headers);
       if (response.statusCode >= 400) {
         throw ApiException(_detail(text, response.statusCode));
@@ -228,7 +279,7 @@ class QueroApi {
     } on ApiException {
       rethrow;
     } on TimeoutException {
-      throw ApiException('A loja demorou demais para responder. Tente de novo.');
+      throw ApiException('O servidor demorou demais para responder. Tente de novo.');
     } catch (_) {
       throw ApiException('Não foi possível falar com o servidor.');
     }

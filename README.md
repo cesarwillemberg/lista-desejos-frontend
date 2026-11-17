@@ -34,15 +34,20 @@ flutter build ios --dart-define=API_BASE=https://seu-servidor.example
 
 To serve the web build from the API, point `QUERO_WEB_DIR` at `build/web` and leave `API_BASE` unset for that build.
 
-The web app uses hash routes so a refresh on GitHub Pages still opens the page. A shared list is `https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/<token>`.
+The web app uses hash routes so a refresh on GitHub Pages still opens the page. The share button copies a short link such as `https://lista-desejos-backend.onrender.com/s/Ab12cde`, which opens `https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cde`. Older long tokens still open. On a phone, **Enviar** uses the system share sheet when the browser allows it.
+
+Android App Links and iOS Universal Links use `https://lista-desejos-backend.onrender.com/s/…`. The custom scheme `quero://s/{code}` is the fallback. Set `ANDROID_SHA256_FINGERPRINTS` and `IOS_APP_ID` on the API before the store builds can claim those links.
 
 ## What you can do
 
 - Criar conta and Entrar with e-mail and password. The session stays on this device until Sair.
-- Create, rename, and delete lists. Items belong to one list.
+- Create, rename, and delete lists. Items belong to one list. Categories are optional: a list with none stays a flat grid. After you add one (Sala, Cozinha, Iluminação…), items group under those headers, with a count and subtotal. Items without a category sit in Sem categoria. Deleting a category sends its items there.
 - Share a list. Anyone with the link can look, without an account, and mark **Reservar / Já comprei** so two people don’t buy the same gift. The owner can copy, regenerate, or revoke the link.
 
-- Add an item with a name and a product URL. The card shows the photo and the price the API found.
+- On a wide screen the dark sidebar lists every wishlist (name and item count), switches list on click, and can be collapsed or resized. The width and the collapsed state stay in local storage. On a phone that sidebar is a drawer.
+- **Adicionar item** sits in the Itens header and, on a phone, on a floating button. It opens a dialog (a bottom sheet on a phone) with the link, the name, and a category when the list already has one. The API still fills in the photo and the price.
+- If the list request fails or the server takes too long to wake up, the items area shows the error and **Tentar de novo** instead of spinning.
+- Add an item with a name and a product URL. The card shows the photo, contained (not cropped) on a light background, and the price the API found.
 - See the list and a total. Amounts in BRL use `R$ 1.299,90`. Other currencies keep their own code.
 - Edit the name, the image URL, and the price. Clear the price field to mark it unavailable.
 - Refresh the photo and the price from the store.
