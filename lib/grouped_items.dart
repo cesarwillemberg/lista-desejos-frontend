@@ -48,6 +48,7 @@ class GroupedItems extends StatefulWidget {
     required this.wide,
     required this.cardBuilder,
     this.onRefresh,
+    this.embedded = false,
   });
 
   final List<WishCategory> categories;
@@ -55,6 +56,7 @@ class GroupedItems extends StatefulWidget {
   final bool wide;
   final Widget Function(WishItem item, bool fillHeight) cardBuilder;
   final Future<void> Function()? onRefresh;
+  final bool embedded;
 
   @override
   State<GroupedItems> createState() => _GroupedItemsState();
@@ -67,21 +69,43 @@ class _GroupedItemsState extends State<GroupedItems> {
   @override
   Widget build(BuildContext context) {
     final groups = buildGroups(widget.categories, widget.items, filterId: _filter);
+    final chips = SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _chip('Todas', _filter == null, () => setState(() => _filter = null)),
+          for (final category in widget.categories) _chip(category.name, _filter == category.id, () => setState(() => _filter = category.id)),
+          _chip('Sem categoria', _filter == '', () => setState(() => _filter = '')),
+        ],
+      ),
+    );
+    if (widget.embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          chips,
+          const SizedBox(height: 8),
+          for (final group in groups) ...[
+            _header(group),
+            if (!_collapsed.contains(group.id ?? '')) ...[
+              if (group.items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
+                )
+              else
+                for (final item in group.items) Padding(padding: const EdgeInsets.only(bottom: 14), child: widget.cardBuilder(item, false)),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 44,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _chip('Todas', _filter == null, () => setState(() => _filter = null)),
-              for (final category in widget.categories)
-                _chip(category.name, _filter == category.id, () => setState(() => _filter = category.id)),
-              _chip('Sem categoria', _filter == '', () => setState(() => _filter = '')),
-            ],
-          ),
-        ),
+        chips,
         const SizedBox(height: 8),
         Expanded(
           child: RefreshIndicator(

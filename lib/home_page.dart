@@ -285,7 +285,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 980;
+        final narrow = constraints.maxWidth < 600;
         final canEdit = _list?.canEdit ?? false;
+        final isOwner = _list?.isOwner == true;
         final board = _Board(
           title: name,
           items: _items,
@@ -293,6 +295,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           error: _error,
           busyId: _busyId,
           wide: wide,
+          narrow: narrow,
           snapshot: _snapshot,
           categories: _categories,
           api: api,
@@ -302,7 +305,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           onMembers: _list == null ? null : _openMembers,
           onMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
           onBack: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
-          onShare: _list?.isOwner == true ? _share : null,
+          onShare: isOwner ? _share : null,
+          onRenameList: isOwner ? _renameList : null,
+          onDeleteList: isOwner ? _deleteList : null,
           onReload: _load,
           onReserve: _reserve,
           onRefresh: _refresh,
@@ -420,6 +425,51 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     );
   }
 
+  Future<void> _renameList() async {
+    final list = _list;
+    if (list == null) return;
+    final name = await _askListName(context, title: 'Renomear lista', initial: list.name, confirm: 'Salvar');
+    if (name == null || name.isEmpty || !mounted) return;
+    try {
+      await SessionScope.of(context).api.renameList(list.id, name);
+      if (!mounted) return;
+      await _load();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _deleteList() async {
+    final list = _list;
+    if (list == null) return;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: QueroColors.cream,
+        title: Text('Excluir “${list.name}”?', style: fraunces(24)),
+        content: const Text('A lista e os itens saem da sua conta. O link compartilhado deixa de funcionar.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: QueroColors.danger, foregroundColor: Colors.white),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    try {
+      await SessionScope.of(context).api.deleteList(list.id);
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
   Future<void> _createList() async {
     final api = SessionScope.of(context).api;
     final messenger = ScaffoldMessenger.of(context);
@@ -475,20 +525,20 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   }
 }
 
-Future<String?> _askListName(BuildContext context) {
-  final controller = TextEditingController();
+Future<String?> _askListName(BuildContext context, {String title = 'Nova lista', String initial = '', String confirm = 'Criar'}) {
+  final controller = TextEditingController(text: initial);
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: QueroColors.cream,
-      title: Text('Nova lista', style: fraunces(24)),
+      title: Text(title, style: fraunces(24)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Nome da lista')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
           style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
-          child: const Text('Criar'),
+          child: Text(confirm),
         ),
       ],
     ),
@@ -503,6 +553,7 @@ class _Board extends StatelessWidget {
     required this.error,
     required this.busyId,
     required this.wide,
+    this.narrow = false,
     required this.snapshot,
     required this.categories,
     required this.api,
@@ -513,6 +564,8 @@ class _Board extends StatelessWidget {
     this.onMenu,
     required this.onBack,
     this.onShare,
+    this.onRenameList,
+    this.onDeleteList,
     required this.onReload,
     this.onReserve,
     required this.onRefresh,
@@ -528,6 +581,7 @@ class _Board extends StatelessWidget {
   final String? error;
   final String? busyId;
   final bool wide;
+  final bool narrow;
   final WishlistSnapshot snapshot;
   final List<WishCategory> categories;
   final QueroApi api;
@@ -538,6 +592,8 @@ class _Board extends StatelessWidget {
   final VoidCallback? onMenu;
   final VoidCallback onBack;
   final VoidCallback? onShare;
+  final VoidCallback? onRenameList;
+  final VoidCallback? onDeleteList;
   final Future<void> Function() onReload;
   final void Function(WishItem)? onReserve;
   final void Function(WishItem) onRefresh;
@@ -548,6 +604,7 @@ class _Board extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (narrow) return _narrowBoard();
     return Padding(
       padding: EdgeInsets.fromLTRB(wide ? 28 : 16, wide ? 20 : 8, wide ? 28 : 16, 8),
       child: Column(
@@ -578,6 +635,114 @@ class _Board extends StatelessWidget {
           const SizedBox(height: 8),
           Expanded(child: _content()),
         ],
+      ),
+    );
+  }
+
+  Widget _narrowBoard() {
+    return RefreshIndicator(
+      color: QueroColors.ink,
+      onRefresh: onReload,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: QueroColors.paper,
+            surfaceTintColor: QueroColors.paper,
+            foregroundColor: QueroColors.ink,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            toolbarHeight: kToolbarHeight,
+            expandedHeight: kToolbarHeight + 92,
+            leading: IconButton(onPressed: onMenu, tooltip: 'Listas', icon: const Icon(Icons.menu)),
+            actions: [
+              if (onShare != null) IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
+              PopupMenuButton<String>(
+                tooltip: 'Mais',
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'members':
+                      onMembers?.call();
+                    case 'categories':
+                      onCategories?.call();
+                    case 'rename':
+                      onRenameList?.call();
+                    case 'delete':
+                      onDeleteList?.call();
+                    case 'refresh':
+                      onReload();
+                    default:
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (onMembers != null) const PopupMenuItem(value: 'members', child: Text('Membros')),
+                  if (onCategories != null) const PopupMenuItem(value: 'categories', child: Text('Categorias')),
+                  if (onRenameList != null) const PopupMenuItem(value: 'rename', child: Text('Renomear lista')),
+                  if (onDeleteList != null)
+                    const PopupMenuItem(value: 'delete', child: Text('Excluir lista', style: TextStyle(color: QueroColors.danger))),
+                  const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
+                ],
+              ),
+            ],
+            flexibleSpace: _CollapsingListTitle(title: title),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: _TotalBlock(snapshot: snapshot, onDark: false),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 108),
+            sliver: _narrowBody(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _narrowBody() {
+    if (loading) {
+      return const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: QueroColors.ink)));
+    }
+    if (error != null && items.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(error!, textAlign: TextAlign.center)),
+              const SizedBox(height: 16),
+              OutlinedButton(onPressed: onReload, child: const Text('Tentar de novo')),
+            ],
+          ),
+        ),
+      );
+    }
+    if (items.isEmpty && categories.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center)),
+      );
+    }
+    if (categories.isEmpty) {
+      return SliverList.separated(
+        itemCount: items.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 14),
+        itemBuilder: (context, index) => _card(items[index], fillHeight: false),
+      );
+    }
+    return SliverToBoxAdapter(
+      child: GroupedItems(
+        categories: categories,
+        items: items,
+        wide: false,
+        embedded: true,
+        cardBuilder: (item, fill) => _card(item, fillHeight: fill),
       ),
     );
   }
@@ -806,6 +971,49 @@ Future<String?> _askCategoryName(BuildContext context) async {
       ],
     ),
   );
+}
+
+class _CollapsingListTitle extends StatelessWidget {
+  const _CollapsingListTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    final span = settings == null ? 1.0 : settings.maxExtent - settings.minExtent;
+    final expanded = settings == null || span <= 0 ? 1.0 : ((settings.currentExtent - settings.minExtent) / span).clamp(0.0, 1.0);
+    final top = MediaQuery.paddingOf(context).top;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (expanded > 0.2)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 6,
+            child: Opacity(
+              opacity: expanded,
+              child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, softWrap: true, style: fraunces(32, height: 1.12)),
+            ),
+          ),
+        if (expanded < 0.55)
+          Positioned(
+            left: 56,
+            right: 104,
+            top: top,
+            height: kToolbarHeight,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Opacity(
+                opacity: (1 - expanded).clamp(0.0, 1.0),
+                child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: fraunces(18, height: 1.1)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _TotalBlock extends StatelessWidget {
