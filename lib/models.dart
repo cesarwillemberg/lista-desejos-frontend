@@ -16,6 +16,7 @@ class WishItem {
     this.reserved = false,
     this.reservedLabel,
     this.reservedByMe = false,
+    this.addedByLabel,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class WishItem {
   final bool reserved;
   final String? reservedLabel;
   final bool reservedByMe;
+  final String? addedByLabel;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -53,6 +55,7 @@ class WishItem {
       reserved: json['reserved'] == true,
       reservedLabel: json['reserved_label'] as String?,
       reservedByMe: json['reserved_by_me'] == true,
+      addedByLabel: json['added_by_label'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -88,12 +91,14 @@ class WishlistSnapshot {
     required this.unpricedCount,
     this.title,
     this.categories = const [],
+    this.list,
   });
 
   final List<WishItem> items;
   final int unpricedCount;
   final String? title;
   final List<WishCategory> categories;
+  final WishList? list;
 
   List<MoneyTotal> get totals {
     final buckets = <String, double>{};
@@ -125,6 +130,45 @@ class UserAccount {
   }
 }
 
+class ListMember {
+  const ListMember({
+    required this.userId,
+    required this.email,
+    required this.label,
+    required this.initials,
+    required this.role,
+  });
+
+  final String userId;
+  final String email;
+  final String label;
+  final String initials;
+  final String role;
+
+  factory ListMember.fromJson(Map<String, dynamic> json) {
+    return ListMember(
+      userId: json['user_id'] as String,
+      email: (json['email'] as String?) ?? '',
+      label: (json['label'] as String?) ?? '',
+      initials: (json['initials'] as String?) ?? '?',
+      role: (json['role'] as String?) ?? 'viewer',
+    );
+  }
+}
+
+String roleLabel(String role) {
+  switch (role) {
+    case 'owner':
+      return 'Dono';
+    case 'editor':
+      return 'Pode editar';
+    case 'viewer':
+      return 'Só pode ver';
+    default:
+      return role;
+  }
+}
+
 class WishList {
   const WishList({
     required this.id,
@@ -136,6 +180,11 @@ class WishList {
     this.sharePath,
     this.shortCode,
     this.shortUrl,
+    this.role = 'owner',
+    this.collaborative = false,
+    this.members = const [],
+    this.inviteEditorUrl,
+    this.inviteViewerUrl,
   });
 
   final String id;
@@ -147,6 +196,14 @@ class WishList {
   final int itemCount;
   final int unpricedCount;
   final List<MoneyTotal> totals;
+  final String role;
+  final bool collaborative;
+  final List<ListMember> members;
+  final String? inviteEditorUrl;
+  final String? inviteViewerUrl;
+
+  bool get canEdit => role != 'viewer';
+  bool get isOwner => role == 'owner';
 
   factory WishList.fromJson(Map<String, dynamic> json) {
     final rawTotals = json['totals'];
@@ -168,8 +225,21 @@ class WishList {
       itemCount: (json['item_count'] as num?)?.toInt() ?? 0,
       unpricedCount: (json['unpriced_count'] as num?)?.toInt() ?? 0,
       totals: totals,
+      role: (json['role'] as String?) ?? 'owner',
+      collaborative: json['collaborative'] == true,
+      members: _members(json['members']),
+      inviteEditorUrl: json['invite_editor_url'] as String?,
+      inviteViewerUrl: json['invite_viewer_url'] as String?,
     );
   }
+}
+
+List<ListMember> _members(dynamic raw) {
+  if (raw is! List) return const [];
+  return [
+    for (final entry in raw)
+      if (entry is Map) ListMember.fromJson(Map<String, dynamic>.from(entry)),
+  ];
 }
 
 double? _asDouble(dynamic value) {

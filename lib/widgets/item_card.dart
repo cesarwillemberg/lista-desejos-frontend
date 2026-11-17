@@ -117,6 +117,15 @@ class _CardDetails extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(20, height: 1.15)),
+          if (item.addedByLabel != null && item.addedByLabel!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'adicionado por ${item.addedByLabel}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: QueroColors.muted, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 10),
           Text(
             price,

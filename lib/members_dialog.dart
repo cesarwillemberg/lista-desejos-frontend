@@ -1,0 +1,259 @@
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'api.dart';
+import 'models.dart';
+import 'session.dart';
+import 'theme.dart';
+import 'widgets/member_avatars.dart';
+
+class MembersDialog extends StatefulWidget {
+  const MembersDialog({super.key, required this.api, required this.list});
+
+  final QueroApi api;
+  final WishList list;
+
+  @override
+  State<MembersDialog> createState() => _MembersDialogState();
+}
+
+class _MembersDialogState extends State<MembersDialog> {
+  late WishList _list;
+  final _email = TextEditingController();
+  String _inviteRole = 'editor';
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _list = widget.list;
+  }
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _refreshList() async {
+    final snapshot = await widget.api.listItems(_list.id);
+    if (!mounted || snapshot.list == null) return;
+    setState(() => _list = snapshot.list!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = SessionScope.of(context).user?.id;
+    return Dialog(
+      backgroundColor: QueroColors.paper,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('Membros', style: fraunces(28))),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                ],
+              ),
+              Text('Colaborar em ${_list.name}', style: const TextStyle(color: QueroColors.muted)),
+              const SizedBox(height: 12),
+              MemberAvatars(members: _list.members),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView(
+                  children: [
+                    for (final member in _list.members) _memberTile(member, userId),
+                    if (_list.isOwner) ...[
+                      const SizedBox(height: 8),
+                      Text('Convidar', style: fraunces(22)),
+                      const SizedBox(height: 8),
+                      _inviteBlock('editor', 'Pode editar', _list.inviteEditorUrl),
+                      const SizedBox(height: 12),
+                      _inviteBlock('viewer', 'Só pode ver', _list.inviteViewerUrl),
+                      const SizedBox(height: 16),
+                      const Text('Por e-mail', style: TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(hintText: 'pessoa@email.com'),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'editor', label: Text('Pode editar')),
+                          ButtonSegment(value: 'viewer', label: Text('Só pode ver')),
+                        ],
+                        selected: {_inviteRole},
+                        onSelectionChanged: (value) => setState(() => _inviteRole = value.first),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton(
+                          onPressed: _busy ? null : _addEmail,
+                          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+                          child: const Text('Adicionar'),
+                        ),
+                      ),
+                    ],
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_error!, style: const TextStyle(color: QueroColors.danger)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _memberTile(ListMember member, String? userId) {
+    final mine = userId != null && member.userId == userId;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: QueroColors.ink,
+            child: Text(member.initials, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(member.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(roleLabel(member.role), style: const TextStyle(color: QueroColors.muted, fontSize: 12)),
+              ],
+            ),
+          ),
+          if (_list.isOwner && member.role != 'owner')
+            PopupMenuButton<String>(
+              onSelected: (value) => _onMemberAction(member, value),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'editor', child: Text('Pode editar')),
+                PopupMenuItem(value: 'viewer', child: Text('Só pode ver')),
+                PopupMenuItem(value: 'remove', child: Text('Remover')),
+              ],
+            )
+          else if (mine && !_list.isOwner)
+            TextButton(onPressed: _busy ? null : _leave, child: const Text('Sair', style: TextStyle(color: QueroColors.danger))),
+        ],
+      ),
+    );
+  }
+
+  Widget _inviteBlock(String role, String title, String? url) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: QueroColors.cream, borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(url ?? 'Link desativado', style: const TextStyle(color: QueroColors.muted, fontSize: 13)),
+            Wrap(
+              spacing: 4,
+              children: [
+                if (url == null)
+                  TextButton(onPressed: _busy ? null : () => _setLink(role, create: true), child: const Text('Criar link'))
+                else ...[
+                  TextButton(onPressed: () => _copy(url), child: const Text('Copiar')),
+                  TextButton(onPressed: () => _share(url), child: const Text('Enviar')),
+                  TextButton(onPressed: _busy ? null : () => _setLink(role, regenerate: true), child: const Text('Gerar novo')),
+                  TextButton(onPressed: _busy ? null : () => _setLink(role), child: const Text('Desativar')),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addEmail() async {
+    final email = _email.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = 'Informe um e-mail.');
+      return;
+    }
+    await _run(() async {
+      await widget.api.inviteByEmail(_list.id, email, _inviteRole);
+      _email.clear();
+      await _refreshList();
+    });
+  }
+
+  Future<void> _onMemberAction(ListMember member, String value) async {
+    await _run(() async {
+      if (value == 'remove') {
+        await widget.api.removeMember(_list.id, member.userId);
+      } else {
+        await widget.api.changeMemberRole(_list.id, member.userId, value);
+      }
+      await _refreshList();
+    });
+  }
+
+  Future<void> _setLink(String role, {bool create = false, bool regenerate = false}) async {
+    await _run(() async {
+      final WishList updated;
+      if (regenerate) {
+        updated = await widget.api.regenerateInvite(_list.id, role);
+      } else if (create) {
+        updated = await widget.api.openInvite(_list.id, role);
+      } else {
+        updated = await widget.api.disableInvite(_list.id, role);
+      }
+      if (mounted) setState(() => _list = updated);
+    });
+  }
+
+  Future<void> _copy(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copiado.')));
+  }
+
+  Future<void> _share(String url) async {
+    try {
+      await SharePlus.instance.share(ShareParams(text: url, subject: _list.name));
+    } catch (_) {
+      await _copy(url);
+    }
+  }
+
+  Future<void> _leave() async {
+    await _run(() async {
+      await widget.api.leaveList(_list.id);
+      if (mounted) Navigator.pop(context, true);
+    });
+  }
+}

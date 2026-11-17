@@ -5,6 +5,7 @@ import 'models.dart';
 import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/member_avatars.dart';
 
 class ListsPage extends StatefulWidget {
   const ListsPage({super.key});
@@ -187,7 +188,7 @@ class _ListsPageState extends State<ListsPage> {
         }
         return GridView.builder(
           itemCount: _lists.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 360, mainAxisExtent: 180, crossAxisSpacing: 14, mainAxisSpacing: 14),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 360, mainAxisExtent: 220, crossAxisSpacing: 14, mainAxisSpacing: 14),
           itemBuilder: (context, index) => _card(_lists[index]),
         );
       },
@@ -207,17 +208,30 @@ class _ListsPageState extends State<ListsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: fraunces(24)),
+              Row(
+                children: [
+                  Expanded(child: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: fraunces(24))),
+                  if (list.collaborative) const SharedBadge(),
+                ],
+              ),
+              if (list.collaborative) ...[
+                const SizedBox(height: 8),
+                MemberAvatars(members: list.members),
+              ],
               const SizedBox(height: 6),
               Text(list.itemCount == 1 ? '1 item' : '${list.itemCount} itens', style: const TextStyle(color: QueroColors.muted)),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(total, style: fraunces(22, color: QueroColors.forest)),
               Row(
                 children: [
-                  if (list.shareToken != null) const Text('Compartilhada', style: TextStyle(color: QueroColors.accent, fontWeight: FontWeight.w700, fontSize: 12)),
+                  if (!list.collaborative && list.shareToken != null)
+                    const Text('Link público', style: TextStyle(color: QueroColors.accent, fontWeight: FontWeight.w700, fontSize: 12)),
                   const Spacer(),
-                  TextButton(onPressed: () => _rename(list), child: const Text('Renomear')),
-                  TextButton(onPressed: () => _delete(list), child: const Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                  if (list.isOwner) ...[
+                    TextButton(onPressed: () => _rename(list), child: const Text('Renomear')),
+                    TextButton(onPressed: () => _delete(list), child: const Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                  ] else
+                    Text(roleLabel(list.role), style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600)),
                 ],
               ),
             ],

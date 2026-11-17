@@ -10,6 +10,7 @@ import 'session.dart';
 import 'theme.dart';
 import 'grouped_items.dart';
 import 'list_sidebar.dart';
+import 'members_dialog.dart';
 import 'widgets/add_form.dart';
 import 'widgets/edit_dialog.dart';
 import 'widgets/item_card.dart';
@@ -23,7 +24,7 @@ class ListDetailPage extends StatefulWidget {
   State<ListDetailPage> createState() => _ListDetailPageState();
 }
 
-class _ListDetailPageState extends State<ListDetailPage> {
+class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObserver {
   WishList? _list;
   List<WishList> _allLists = [];
   List<WishItem> _items = [];
@@ -34,6 +35,23 @@ class _ListDetailPageState extends State<ListDetailPage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _started) _load();
+  }
 
   @override
   void didChangeDependencies() {
@@ -64,9 +82,9 @@ class _ListDetailPageState extends State<ListDetailPage> {
         _allLists = lists;
         _items = snapshot.items;
         _categories = snapshot.categories;
-        _list = match;
+        _list = snapshot.list ?? match;
         _loading = false;
-        _error = match == null ? 'Lista não encontrada.' : null;
+        _error = (snapshot.list ?? match) == null ? 'Lista não encontrada.' : null;
       });
     } catch (error) {
       if (!mounted) return;
@@ -267,6 +285,7 @@ class _ListDetailPageState extends State<ListDetailPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 980;
+        final canEdit = _list?.canEdit ?? false;
         final board = _Board(
           title: name,
           items: _items,
@@ -277,12 +296,15 @@ class _ListDetailPageState extends State<ListDetailPage> {
           snapshot: _snapshot,
           categories: _categories,
           api: api,
-          onAdd: _list == null ? null : () => _openAdd(api, wide: wide),
-          onCategories: _manageCategories,
+          canEdit: canEdit,
+          onAdd: canEdit ? () => _openAdd(api, wide: wide) : null,
+          onCategories: canEdit ? _manageCategories : null,
+          onMembers: _list == null ? null : _openMembers,
           onMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
           onBack: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
-          onShare: _share,
+          onShare: _list?.isOwner == true ? _share : null,
           onReload: _load,
+          onReserve: _reserve,
           onRefresh: _refresh,
           onEdit: _edit,
           onOpen: _open,
@@ -302,21 +324,22 @@ class _ListDetailPageState extends State<ListDetailPage> {
             Navigator.of(context).pushReplacementNamed('/list/${list.id}');
           },
           onCreate: _createList,
+          onMembers: _list == null ? null : _openMembers,
         );
         if (!wide) {
           return Scaffold(
             key: _scaffoldKey,
             backgroundColor: QueroColors.paper,
             drawer: Drawer(backgroundColor: QueroColors.ink, child: sidebar),
-            floatingActionButton: _list == null
-                ? null
-                : FloatingActionButton.extended(
+            floatingActionButton: canEdit
+                ? FloatingActionButton.extended(
                     onPressed: () => _openAdd(api, wide: false),
                     backgroundColor: QueroColors.accent,
                     foregroundColor: Colors.white,
                     icon: const Icon(Icons.add),
                     label: const Text('Adicionar item'),
-                  ),
+                  )
+                : null,
             body: board,
           );
         }
@@ -326,6 +349,56 @@ class _ListDetailPageState extends State<ListDetailPage> {
         );
       },
     );
+  }
+
+  Future<void> _openMembers() async {
+    final list = _list;
+    if (list == null) return;
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) Navigator.pop(context);
+    final left = await showDialog<bool>(
+      context: context,
+      builder: (context) => MembersDialog(api: SessionScope.of(context).api, list: list),
+    );
+    if (!mounted) return;
+    if (left == true) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      return;
+    }
+    await _load();
+  }
+
+  Future<void> _reserve(WishItem item) async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          backgroundColor: QueroColors.cream,
+          title: Text('Já comprei', style: fraunces(26)),
+          content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'Seu nome (opcional)')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
+              child: const Text('Reservar'),
+            ),
+          ],
+        );
+      },
+    );
+    if (name == null || !mounted) return;
+    setState(() => _busyId = item.id);
+    try {
+      final updated = await SessionScope.of(context).api.reserveItem(item.id, name: name);
+      if (!mounted) return;
+      _replace(updated);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
   }
 
   Future<void> _manageCategories() async {
@@ -433,12 +506,15 @@ class _Board extends StatelessWidget {
     required this.snapshot,
     required this.categories,
     required this.api,
+    required this.canEdit,
     this.onAdd,
-    required this.onCategories,
+    this.onCategories,
+    this.onMembers,
     this.onMenu,
     required this.onBack,
-    required this.onShare,
+    this.onShare,
     required this.onReload,
+    this.onReserve,
     required this.onRefresh,
     required this.onEdit,
     required this.onOpen,
@@ -455,12 +531,15 @@ class _Board extends StatelessWidget {
   final WishlistSnapshot snapshot;
   final List<WishCategory> categories;
   final QueroApi api;
+  final bool canEdit;
   final VoidCallback? onAdd;
-  final VoidCallback onCategories;
+  final VoidCallback? onCategories;
+  final VoidCallback? onMembers;
   final VoidCallback? onMenu;
   final VoidCallback onBack;
-  final VoidCallback onShare;
-  final VoidCallback onReload;
+  final VoidCallback? onShare;
+  final Future<void> Function() onReload;
+  final void Function(WishItem)? onReserve;
   final void Function(WishItem) onRefresh;
   final void Function(WishItem) onEdit;
   final void Function(WishItem) onOpen;
@@ -488,8 +567,9 @@ class _Board extends StatelessWidget {
                     label: const Text('Adicionar item'),
                     style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: Colors.white),
                   ),
-                IconButton(onPressed: onCategories, tooltip: 'Categorias', icon: const Icon(Icons.category_outlined)),
-                IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
+                if (onMembers != null) IconButton(onPressed: onMembers, tooltip: 'Membros', icon: const Icon(Icons.group_outlined)),
+                if (onCategories != null) IconButton(onPressed: onCategories, tooltip: 'Categorias', icon: const Icon(Icons.category_outlined)),
+                if (onShare != null) IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
                 IconButton(onPressed: onReload, tooltip: 'Recarregar', icon: const Icon(Icons.refresh)),
               ],
             ),
@@ -517,42 +597,57 @@ class _Board extends StatelessWidget {
       );
     }
     if (items.isEmpty && categories.isEmpty) {
-      return Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center));
+      return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: [SizedBox(height: 240, child: Center(child: Text('Nada por aqui ainda', style: fraunces(28), textAlign: TextAlign.center)))]));
     }
     if (categories.isEmpty) {
       if (wide) {
-        return GridView.builder(
+        return _pull(GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: items.length,
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 380,
-            mainAxisExtent: 520,
+            mainAxisExtent: 540,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
           itemBuilder: (context, index) => _card(items[index], fillHeight: true),
-        );
+        ));
       }
-      return ListView.separated(
+      return _pull(ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         itemCount: items.length,
         separatorBuilder: (context, index) => const SizedBox(height: 14),
         itemBuilder: (context, index) => _card(items[index], fillHeight: false),
-      );
+      ));
     }
-    return GroupedItems(categories: categories, items: items, wide: wide, cardBuilder: (item, fill) => _card(item, fillHeight: fill));
+    return GroupedItems(
+      categories: categories,
+      items: items,
+      wide: wide,
+      onRefresh: onReload,
+      cardBuilder: (item, fill) => _card(item, fillHeight: fill),
+    );
+  }
+
+  Widget _pull(Widget child) {
+    return RefreshIndicator(color: QueroColors.ink, onRefresh: onReload, child: child);
   }
 
   Widget _card(WishItem item, {required bool fillHeight}) {
+    final viewer = !canEdit;
     return ItemCard(
       item: item,
       proxyUrl: api.imageProxy(item),
       imageHeaders: api.authHeaders,
       busy: busyId == item.id,
       fillHeight: fillHeight,
+      readOnly: viewer,
       onRefresh: () => onRefresh(item),
       onEdit: () => onEdit(item),
       onOpen: () => onOpen(item),
       onDelete: () => onDelete(item),
-      onUnreserve: item.reserved ? () => onUnreserve(item) : null,
+      onReserve: viewer && !item.reserved && onReserve != null ? () => onReserve!(item) : null,
+      onUnreserve: item.reserved && (viewer ? item.reservedByMe : true) ? () => onUnreserve(item) : null,
     );
   }
 }

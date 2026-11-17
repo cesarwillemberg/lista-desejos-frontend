@@ -14,3 +14,20 @@ String? shareCodeFromUri(Uri? uri) {
   }
   return null;
 }
+
+/// Pulls a collaboration invite code out of `/c/{code}` or `quero://c/{code}`.
+String? inviteCodeFromUri(Uri? uri) {
+  if (uri == null) return null;
+  if (uri.scheme == 'quero' && uri.host == 'c') {
+    if (uri.pathSegments.isEmpty) return null;
+    final code = uri.pathSegments.first.trim();
+    return code.isEmpty ? null : code;
+  }
+  if (uri.scheme == 'https' || uri.scheme == 'http') {
+    if (uri.pathSegments.length >= 2 && uri.pathSegments.first == 'c') {
+      final code = uri.pathSegments[1].trim();
+      return code.isEmpty ? null : code;
+    }
+  }
+  return null;
+}

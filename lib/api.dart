@@ -112,13 +112,59 @@ class QueroApi {
   Future<WishlistSnapshot> listItems(String listId) async {
     final response = await _send('GET', '/api/lists/$listId/items', null, null, const Duration(seconds: 20));
     final body = _jsonMap(response);
-    final title = (body['list'] as Map?)?['name'] as String?;
+    final rawList = body['list'];
+    final title = (rawList is Map) ? rawList['name'] as String? : null;
     return WishlistSnapshot(
       items: _items(body['items']),
       unpricedCount: (body['unpriced_count'] as num?)?.toInt() ?? 0,
       title: title,
       categories: _categories(body['categories']),
+      list: rawList is Map ? WishList.fromJson(Map<String, dynamic>.from(rawList)) : null,
     );
+  }
+
+  Future<WishList> openInvite(String listId, String role) async {
+    final response = await _send('POST', '/api/lists/$listId/invites/$role');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> regenerateInvite(String listId, String role) async {
+    final response = await _send('POST', '/api/lists/$listId/invites/$role/regenerate');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> disableInvite(String listId, String role) async {
+    final response = await _send('DELETE', '/api/lists/$listId/invites/$role');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<WishList> acceptInvite(String code) async {
+    final response = await _send('POST', '/api/invites/$code/accept');
+    return WishList.fromJson(_jsonMap(response));
+  }
+
+  Future<List<ListMember>> inviteByEmail(String listId, String email, String role) async {
+    final response = await _send('POST', '/api/lists/$listId/members', {'email': email, 'role': role});
+    return _memberList(_jsonMap(response)['members']);
+  }
+
+  Future<List<ListMember>> changeMemberRole(String listId, String userId, String role) async {
+    final response = await _send('PATCH', '/api/lists/$listId/members/$userId', {'role': role});
+    return _memberList(_jsonMap(response)['members']);
+  }
+
+  Future<List<ListMember>> removeMember(String listId, String userId) async {
+    final response = await _send('DELETE', '/api/lists/$listId/members/$userId');
+    return _memberList(_jsonMap(response)['members']);
+  }
+
+  Future<void> leaveList(String listId) async {
+    await _send('POST', '/api/lists/$listId/leave');
+  }
+
+  Future<WishItem> reserveItem(String id, {String? name}) async {
+    final response = await _send('POST', '/api/items/$id/reservation', {'name': name ?? ''});
+    return WishItem.fromJson(_jsonMap(response));
   }
 
   Future<WishCategory> createCategory(String listId, String name) async {
@@ -211,6 +257,14 @@ class QueroApi {
 
   Future<void> clearReservation(String shareToken, String itemId, String claimToken) async {
     await _send('DELETE', '/api/share/$shareToken/items/$itemId/reservation', null, {'x-claim-token': claimToken});
+  }
+
+  List<ListMember> _memberList(dynamic raw) {
+    if (raw is! List) return const [];
+    return [
+      for (final entry in raw)
+        if (entry is Map) ListMember.fromJson(Map<String, dynamic>.from(entry)),
+    ];
   }
 
   List<WishList> _lists(dynamic raw) {

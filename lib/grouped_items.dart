@@ -47,12 +47,14 @@ class GroupedItems extends StatefulWidget {
     required this.items,
     required this.wide,
     required this.cardBuilder,
+    this.onRefresh,
   });
 
   final List<WishCategory> categories;
   final List<WishItem> items;
   final bool wide;
   final Widget Function(WishItem item, bool fillHeight) cardBuilder;
+  final Future<void> Function()? onRefresh;
 
   @override
   State<GroupedItems> createState() => _GroupedItemsState();
@@ -82,7 +84,11 @@ class _GroupedItemsState extends State<GroupedItems> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          child: ListView(
+          child: RefreshIndicator(
+            color: QueroColors.ink,
+            onRefresh: widget.onRefresh ?? () async {},
+            child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
               for (final group in groups) ...[
                 _header(group),
@@ -99,7 +105,7 @@ class _GroupedItemsState extends State<GroupedItems> {
                       itemCount: group.items.length,
                       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 380,
-                        mainAxisExtent: 460,
+                        mainAxisExtent: 500,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
@@ -112,6 +118,7 @@ class _GroupedItemsState extends State<GroupedItems> {
                 ],
               ],
             ],
+            ),
           ),
         ),
       ],

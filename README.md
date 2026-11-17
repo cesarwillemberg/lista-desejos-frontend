@@ -42,7 +42,8 @@ Android App Links and iOS Universal Links use `https://lista-desejos-backend.onr
 
 - Criar conta and Entrar with e-mail and password. The session stays on this device until Sair.
 - Create, rename, and delete lists. Items belong to one list. Categories are optional: a list with none stays a flat grid. After you add one (Sala, Cozinha, Iluminação…), items group under those headers, with a count and subtotal. Items without a category sit in Sem categoria. Deleting a category sends its items there.
-- Share a list. Anyone with the link can look, without an account, and mark **Reservar / Já comprei** so two people don’t buy the same gift. The owner can copy, regenerate, or revoke the link.
+- Share a list with the public read-only link. That link is separate from collaboration. Anyone with it can look, without an account, and mark **Reservar / Já comprei**.
+- **Membros** invites people who already have an account by e-mail, or copies an invite link. The owner chooses **Pode editar** or **Só pode ver** for each invite. Editors change items and categories. Viewers see the list, the total, and the reserve button, and the server refuses their edits. Lists with more than one person show **Compartilhada** and the members’ initials in Suas listas and in the sidebar. Each item can say who added it.
 
 - On a wide screen the dark sidebar lists every wishlist (name and item count), switches list on click, and can be collapsed or resized. The width and the collapsed state stay in local storage. On a phone that sidebar is a drawer.
 - **Adicionar item** sits in the Itens header and, on a phone, on a floating button. It opens a dialog (a bottom sheet on a phone) with the link, the name, and a category when the list already has one. The API still fills in the photo and the price.

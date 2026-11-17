@@ -8,6 +8,7 @@ import 'api.dart';
 import 'auth_page.dart';
 import 'bootstrap.dart';
 import 'home_page.dart';
+import 'invite_page.dart';
 import 'links.dart';
 import 'lists_page.dart';
 import 'session.dart';
@@ -58,6 +59,11 @@ class _QueroAppState extends State<QueroApp> {
   }
 
   void _openLink(Uri? uri) {
+    final invite = inviteCodeFromUri(uri);
+    if (invite != null) {
+      _navigatorKey.currentState?.pushNamed('/c/$invite');
+      return;
+    }
     final code = shareCodeFromUri(uri);
     if (code == null) return;
     _navigatorKey.currentState?.pushNamed('/l/$code');
@@ -89,6 +95,9 @@ class _QueroAppState extends State<QueroApp> {
 
 Widget _route(String name) {
   final path = name.split('?').first;
+  if (path.startsWith('/c/') && path.length > 3) {
+    return _Gate(child: InvitePage(code: Uri.decodeComponent(path.substring(3))));
+  }
   if (path.startsWith('/l/') && path.length > 3) {
     return SharedPage(token: Uri.decodeComponent(path.substring(3)));
   }

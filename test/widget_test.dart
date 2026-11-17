@@ -23,6 +23,8 @@ void main() {
     expect(shareCodeFromUri(Uri.parse('https://lista-desejos-backend.onrender.com/s/Ab12cd')), 'Ab12cd');
     expect(shareCodeFromUri(Uri.parse('quero://s/Ab12cd')), 'Ab12cd');
     expect(shareCodeFromUri(Uri.parse('https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cd')), null);
+    expect(inviteCodeFromUri(Uri.parse('https://lista-desejos-backend.onrender.com/c/Ab12cd')), 'Ab12cd');
+    expect(inviteCodeFromUri(Uri.parse('quero://c/Ab12cd')), 'Ab12cd');
   });
 
   testWidgets('mostra entrar e criar conta', (tester) async {

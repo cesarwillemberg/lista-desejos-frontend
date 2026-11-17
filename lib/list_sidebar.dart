@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 import 'money.dart';
 import 'theme.dart';
+import 'widgets/member_avatars.dart';
 
 const _widthKey = 'quero_sidebar_width';
 const _collapsedKey = 'quero_sidebar_collapsed';
@@ -21,6 +22,7 @@ class ListSidebar extends StatefulWidget {
     required this.onBack,
     required this.onSelect,
     required this.onCreate,
+    this.onMembers,
     this.resizable = true,
   });
 
@@ -31,6 +33,7 @@ class ListSidebar extends StatefulWidget {
   final VoidCallback onBack;
   final ValueChanged<WishList> onSelect;
   final VoidCallback onCreate;
+  final VoidCallback? onMembers;
   final bool resizable;
 
   @override
@@ -171,7 +174,13 @@ class _ListSidebarState extends State<ListSidebar> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(32, color: QueroColors.cream)),
           ),
-          const SizedBox(height: 16),
+          if (widget.onMembers != null)
+            TextButton.icon(
+              onPressed: widget.onMembers,
+              icon: const Icon(Icons.group_outlined, color: QueroColors.cream, size: 18),
+              label: const Text('Membros', style: TextStyle(color: QueroColors.cream)),
+            ),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
@@ -189,7 +198,17 @@ class _ListSidebarState extends State<ListSidebar> {
                     selected: list.id == widget.currentId,
                     selectedTileColor: const Color(0xFF3A2F28),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: QueroColors.cream, fontWeight: FontWeight.w600)),
+                    title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? Colors.white : QueroColors.cream, fontWeight: FontWeight.w700)),
+                    subtitle: list.collaborative
+                        ? Row(
+                            children: [
+                              MemberAvatars(members: list.members, onDark: true),
+                              const SizedBox(width: 8),
+                              const SharedBadge(onDark: true),
+                            ],
+                          )
+                        : null,
+                    isThreeLine: list.collaborative,
                     trailing: Text('${list.itemCount}', style: const TextStyle(color: Color(0xFFD7CDC2))),
                     onTap: () => widget.onSelect(list),
                   ),
