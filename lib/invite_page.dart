@@ -41,7 +41,7 @@ class _InvitePageState extends State<InvitePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QueroColors.paper,
+      backgroundColor: context.wishlyPaper,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(WishlySpace.s8),

@@ -63,7 +63,7 @@ class ItemCard extends StatelessWidget {
     return DecoratedBox(
       decoration: const BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(WishlyCard.radius)), boxShadow: WishlyShadow.sm),
       child: Material(
-      color: QueroColors.cream,
+      color: context.wishlyCream,
       borderRadius: BorderRadius.circular(WishlyCard.radius),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -96,6 +96,95 @@ class ItemCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _detailLine(WishItem item) {
+  final parts = <String>[
+    if (item.colorName != null && item.colorName!.isNotEmpty) item.colorName!,
+    if (item.sizeLabel != null && item.sizeLabel!.isNotEmpty) item.sizeLabel!,
+    if (item.voltage != null && item.voltage!.isNotEmpty) item.voltage!,
+    if (item.quantity != null) '×${item.quantity}',
+  ];
+  return parts.join(' · ');
+}
+
+String _priorityLabel(String priority) {
+  switch (priority) {
+    case 'muito':
+      return 'Muito quero';
+    case 'talvez':
+      return 'Talvez';
+    default:
+      return 'Quero';
+  }
+}
+
+Color _priorityColor(String priority) {
+  switch (priority) {
+    case 'muito':
+      return QueroColors.accent;
+    case 'talvez':
+      return QueroColors.muted;
+    default:
+      return QueroColors.forest;
+  }
+}
+
+class _HistoryDialog extends StatelessWidget {
+  const _HistoryDialog({required this.item});
+  final WishItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final points = item.history.isEmpty && item.price != null ? [item.price!] : item.history;
+    final low = points.isEmpty ? null : points.reduce((a, b) => a < b ? a : b);
+    final high = points.isEmpty ? null : points.reduce((a, b) => a > b ? a : b);
+    return AlertDialog(
+      backgroundColor: context.wishlyCream,
+      title: Text('Histórico de preço', style: fraunces(WishlyText.xl2)),
+      content: SizedBox(
+        width: WishlySize.field,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: WishlySpace.s16, width: double.infinity, child: CustomPaint(painter: _SparkPainter(points))),
+            const SizedBox(height: WishlySpace.s3),
+            if (low != null) Text('Menor ${formatMoney(low, item.currency)}', style: const TextStyle(color: QueroColors.forest, fontWeight: FontWeight.w700)),
+            if (high != null) Text('Maior ${formatMoney(high, item.currency)}', style: const TextStyle(color: QueroColors.muted)),
+          ],
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+    );
+  }
+}
+
+class _SparkPainter extends CustomPainter {
+  const _SparkPainter(this.points);
+  final List<double> points;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final low = points.reduce((a, b) => a < b ? a : b);
+    final high = points.reduce((a, b) => a > b ? a : b);
+    final span = (high - low).abs() < 0.01 ? 1.0 : high - low;
+    final path = Path();
+    for (var i = 0; i < points.length; i++) {
+      final x = size.width * i / (points.length - 1);
+      final y = size.height - ((points[i] - low) / span) * (size.height - WishlySpace.s2);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    canvas.drawPath(path, Paint()..color = QueroColors.forest..style = PaintingStyle.stroke..strokeWidth = WishlySize.stroke..strokeCap = StrokeCap.round);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkPainter oldDelegate) => oldDelegate.points != points;
 }
 
 class _BoughtBadge extends StatelessWidget {
@@ -141,7 +230,7 @@ class _CardDetails extends StatelessWidget {
     final price = item.status == 'pending' && item.price == null ? 'Lendo o preço…' : (item.price == null ? 'Preço indisponível' : formatMoney(item.price!, item.currency));
     final priceStyle = item.price == null
         ? const TextStyle(color: QueroColors.muted, fontSize: WishlyText.base, fontWeight: FontWeight.w500)
-        : fraunces(WishlyText.xl2, color: item.purchased ? QueroColors.muted : QueroColors.forest);
+        : fraunces(WishlyText.xl2, color: item.purchased ? context.wishlyMuted : context.wishlyForest);
     return Padding(
       padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s4, WishlySpace.s4, WishlySpace.s2),
       child: Column(
@@ -185,17 +274,47 @@ class _CardDetails extends StatelessWidget {
             price,
             style: item.purchased ? priceStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: QueroColors.muted) : priceStyle,
           ),
+          const SizedBox(height: WishlySpace.s2),
+          Wrap(
+            spacing: WishlySpace.s2,
+            runSpacing: WishlySpace.s1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(color: _priorityColor(item.priority).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(WishlyRadius.full)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s1),
+                  child: Text(_priorityLabel(item.priority), style: TextStyle(color: _priorityColor(item.priority), fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              if (item.priceDrop != null)
+                InkWell(
+                  onTap: () => showDialog<void>(context: context, builder: (context) => _HistoryDialog(item: item)),
+                  child: Text('↓ ${formatMoney(item.priceDrop!, item.currency)}', style: const TextStyle(color: QueroColors.forest, fontSize: WishlyText.sm, fontWeight: FontWeight.w700)),
+                ),
+            ],
+          ),
+          if (item.note != null && item.note!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: WishlySpace.s2),
+              child: Text(item.note!, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.sm, height: WishlyText.body)),
+            ),
+          if (_detailLine(item).isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: WishlySpace.s1),
+              child: Text(_detailLine(item), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs)),
+            ),
           if (item.message != null && item.status != 'ok') ...[
             const SizedBox(height: WishlySpace.s3),
             DecoratedBox(
-              decoration: BoxDecoration(color: QueroColors.note, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
+              decoration: BoxDecoration(color: context.wishlyNote, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s2),
                 child: Text(
                   item.message!,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: QueroColors.ink, fontSize: WishlyText.sm, height: WishlyText.body),
+                  style: TextStyle(color: context.wishlyInk, fontSize: WishlyText.sm, height: WishlyText.body),
                 ),
               ),
             ),
@@ -234,7 +353,7 @@ class _CardDetails extends StatelessWidget {
                   ],
                 )
               else ...[
-                if (!item.reserved && onReserve != null) _Action(label: 'Reservar', onPressed: busy ? null : onReserve),
+                if (!item.reserved && onReserve != null) _Action(label: 'Eu vou dar esse', onPressed: busy ? null : onReserve),
                 if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
               ],
             ],

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Wishly</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Wishly</h1>
+  <label>API
+    <input id="api" type="url" value="https://lista-desejos-backend.onrender.com">
+  </label>
+  <form id="login">
+    <label>E-mail <input id="email" type="email" autocomplete="username" required></label>
+    <label>Senha <input id="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Entrar</button>
+  </form>
+  <form id="add" hidden>
+    <p id="who"></p>
+    <label>Lista <select id="list"></select></label>
+    <label>Nome <input id="title" type="text"></label>
+    <label>Link <input id="url" type="url" required></label>
+    <label>Prioridade
+      <select id="priority">
+        <option value="muito">Muito quero</option>
+        <option value="quero" selected>Quero</option>
+        <option value="talvez">Talvez</option>
+      </select>
+    </label>
+    <label>Nota <textarea id="note" rows="2"></textarea></label>
+    <button type="submit">Adicionar</button>
+    <button id="logout" type="button">Sair</button>
+  </form>
+  <p id="message" role="status"></p>
+  <script src="popup.js"></script>
+</body>
+</html>

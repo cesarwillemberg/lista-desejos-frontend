@@ -20,6 +20,15 @@ class WishItem {
     this.purchased = false,
     this.purchasedAt,
     this.purchasedByLabel,
+    this.priority = 'quero',
+    this.priceDrop,
+    this.history = const [],
+    this.position = 0,
+    this.note,
+    this.colorName,
+    this.sizeLabel,
+    this.voltage,
+    this.quantity,
   });
 
   final String id;
@@ -40,10 +49,53 @@ class WishItem {
   final bool purchased;
   final DateTime? purchasedAt;
   final String? purchasedByLabel;
+  final String priority;
+  final double? priceDrop;
+  final List<double> history;
+  final int position;
+  final String? note;
+  final String? colorName;
+  final String? sizeLabel;
+  final String? voltage;
+  final int? quantity;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   bool get hasPrice => price != null;
+
+  WishItem withPosition(int next) {
+    return WishItem(
+      id: id,
+      name: name,
+      url: url,
+      status: status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      imageUrl: imageUrl,
+      price: price,
+      currency: currency,
+      store: store,
+      message: message,
+      listId: listId,
+      categoryId: categoryId,
+      reserved: reserved,
+      reservedLabel: reservedLabel,
+      reservedByMe: reservedByMe,
+      addedByLabel: addedByLabel,
+      purchased: purchased,
+      purchasedAt: purchasedAt,
+      purchasedByLabel: purchasedByLabel,
+      priority: priority,
+      priceDrop: priceDrop,
+      history: history,
+      position: next,
+      note: note,
+      colorName: colorName,
+      sizeLabel: sizeLabel,
+      voltage: voltage,
+      quantity: quantity,
+    );
+  }
 
   factory WishItem.fromJson(Map<String, dynamic> json) {
     return WishItem(
@@ -65,6 +117,19 @@ class WishItem {
       purchased: json['purchased'] == true,
       purchasedAt: json['purchased_at'] == null ? null : DateTime.tryParse(json['purchased_at'] as String),
       purchasedByLabel: json['purchased_by_label'] as String?,
+      priority: (json['priority'] as String?) ?? 'quero',
+      priceDrop: _asDouble(json['price_drop']),
+      history: [
+        if (json['price_history'] is List)
+          for (final point in json['price_history'] as List)
+            if (point is Map && _asDouble(point['price']) != null) _asDouble(point['price'])!,
+      ],
+      position: (json['position'] as num?)?.toInt() ?? 0,
+      note: json['note'] as String?,
+      colorName: json['color'] as String?,
+      sizeLabel: json['size_label'] as String?,
+      voltage: json['voltage'] as String?,
+      quantity: (json['quantity'] as num?)?.toInt(),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -209,6 +274,10 @@ class WishList {
     this.inviteEditorUrl,
     this.inviteViewerUrl,
     this.purchasedTotals = const [],
+    this.budget,
+    this.budgetCurrency,
+    this.showReservations = false,
+    this.reservationsEnabled = true,
   });
 
   final String id;
@@ -226,6 +295,10 @@ class WishList {
   final String? inviteEditorUrl;
   final String? inviteViewerUrl;
   final List<MoneyTotal> purchasedTotals;
+  final double? budget;
+  final String? budgetCurrency;
+  final bool showReservations;
+  final bool reservationsEnabled;
 
   bool get canEdit => role != 'viewer';
   bool get isOwner => role == 'owner';
@@ -256,6 +329,10 @@ class WishList {
       inviteEditorUrl: json['invite_editor_url'] as String?,
       inviteViewerUrl: json['invite_viewer_url'] as String?,
       purchasedTotals: _moneyList(json['purchased_totals']),
+      budget: _asDouble(json['budget']),
+      budgetCurrency: json['budget_currency'] as String?,
+      showReservations: json['show_reservations'] == true,
+      reservationsEnabled: json['reservations_enabled'] != false,
     );
   }
 }

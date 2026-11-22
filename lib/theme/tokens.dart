@@ -31,6 +31,19 @@ abstract final class WishlyColor {
   static const transparent = Color(0x00000000);
 }
 
+/// Dark surfaces. The orange accent stays the brand color.
+abstract final class WishlyDark {
+  static const ink = Color(0xFFF3EEE6);
+  static const paper = Color(0xFF1A1410);
+  static const cream = Color(0xFF241C17);
+  static const white = Color(0xFF2C241E);
+  static const muted = Color(0xFFB7ADA3);
+  static const line = Color(0xFF3C312A);
+  static const forest = Color(0xFF8FCBB2);
+  static const note = Color(0xFF3A2A22);
+  static const chip = Color(0xFF4A3024);
+}
+
 /// Opacities used by purchased photos, disabled controls, and focus rings.
 abstract final class WishlyOpacity {
   static const purchased = 0.45;

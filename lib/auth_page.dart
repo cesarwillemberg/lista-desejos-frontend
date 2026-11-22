@@ -62,14 +62,14 @@ class _AuthPageState extends State<AuthPage> {
         final form = _form(onDark: false);
         if (!wide) {
           return Scaffold(
-            backgroundColor: QueroColors.paper,
+            backgroundColor: context.wishlyPaper,
             body: SafeArea(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s10, WishlySpace.s6, WishlySpace.s6),
                 children: [
                   Text('Wishly', style: fraunces(WishlyText.xl5, style: FontStyle.italic)),
                   const SizedBox(height: WishlySpace.s2),
-                  const Text('Entre para guardar suas listas neste aparelho.', style: TextStyle(color: QueroColors.muted, height: WishlyText.body)),
+                  Text('Entre para guardar suas listas neste aparelho.', style: TextStyle(color: context.wishlyMuted, height: WishlyText.body)),
                   const SizedBox(height: WishlySpace.s8),
                   form,
                 ],
@@ -78,7 +78,7 @@ class _AuthPageState extends State<AuthPage> {
           );
         }
         return Scaffold(
-          backgroundColor: QueroColors.paper,
+          backgroundColor: context.wishlyPaper,
           body: Row(
             children: [
               Expanded(

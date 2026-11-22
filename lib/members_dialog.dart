@@ -61,7 +61,7 @@ class _MembersDialogState extends State<MembersDialog> {
   Widget build(BuildContext context) {
     final userId = SessionScope.of(context).user?.id;
     return Dialog(
-      backgroundColor: QueroColors.paper,
+      backgroundColor: context.wishlyPaper,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: WishlySize.dialog, maxHeight: WishlySize.dialogTall),

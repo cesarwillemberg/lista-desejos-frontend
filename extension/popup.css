@@ -1,0 +1,32 @@
+body {
+  margin: 0;
+  width: 320px;
+  padding: 16px;
+  font: 14px/1.4 "Segoe UI", sans-serif;
+  color: #241c17;
+  background: #f3eee6;
+}
+h1 { margin: 0 0 12px; font-family: Georgia, serif; font-style: italic; font-size: 28px; }
+label { display: block; margin-bottom: 8px; color: #746c62; }
+input, select, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 8px;
+  border: 1px solid #e4dcd0;
+  border-radius: 8px;
+  background: #fff;
+  color: #241c17;
+}
+button {
+  margin-top: 8px;
+  margin-right: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #e25b2a;
+  color: #fff;
+  font-weight: 700;
+}
+#logout { background: transparent; color: #241c17; }
+#message { min-height: 1.2em; }

@@ -27,16 +27,17 @@ class ItemGroup {
   }
 }
 
-List<ItemGroup> buildGroups(List<WishCategory> categories, List<WishItem> items, {String? filterId}) {
+List<ItemGroup> buildGroups(List<WishCategory> categories, List<WishItem> items, {String? filterId, bool keepOrder = false}) {
   final ordered = [...categories]..sort((a, b) => a.position.compareTo(b.position));
+  List<WishItem> order(Iterable<WishItem> source) => keepOrder ? source.toList() : sortedWishItems(source);
   final groups = <ItemGroup>[
     for (final category in ordered)
       ItemGroup(
         id: category.id,
         name: category.name,
-        items: sortedWishItems(items.where((item) => item.categoryId == category.id)),
+        items: order(items.where((item) => item.categoryId == category.id)),
       ),
-    ItemGroup(id: null, name: 'Sem categoria', items: sortedWishItems(items.where((item) => item.categoryId == null))),
+    ItemGroup(id: null, name: 'Sem categoria', items: order(items.where((item) => item.categoryId == null))),
   ];
   if (filterId == null) {
     return groups.where((group) => group.id != null || group.items.isNotEmpty).toList();
@@ -57,6 +58,8 @@ class GroupedItems extends StatefulWidget {
     this.embedded = false,
     this.hidePurchased = false,
     this.onHidePurchased,
+    this.keepOrder = false,
+    this.onReorder,
   });
 
   final List<WishCategory> categories;
@@ -68,6 +71,8 @@ class GroupedItems extends StatefulWidget {
   final bool embedded;
   final bool hidePurchased;
   final ValueChanged<bool>? onHidePurchased;
+  final bool keepOrder;
+  final void Function(String? categoryId, int oldIndex, int newIndex)? onReorder;
 
   @override
   State<GroupedItems> createState() => _GroupedItemsState();
@@ -80,7 +85,7 @@ class _GroupedItemsState extends State<GroupedItems> {
   @override
   Widget build(BuildContext context) {
     final visible = widget.hidePurchased ? widget.items.where((item) => !item.purchased).toList() : widget.items;
-    final groups = buildGroups(widget.categories, visible, filterId: _filter);
+    final groups = buildGroups(widget.categories, visible, filterId: _filter, keepOrder: widget.keepOrder);
     final chips = SizedBox(
       height: WishlySize.chipRow,
       child: ListView(
@@ -93,9 +98,9 @@ class _GroupedItemsState extends State<GroupedItems> {
                 label: const Text('Ocultar comprados'),
                 selected: widget.hidePurchased,
                 onSelected: widget.onHidePurchased,
-                selectedColor: WishlyTokens.chip,
-                checkmarkColor: QueroColors.ink,
-                labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
+                selectedColor: context.wishlyChip,
+                checkmarkColor: context.wishlyInk,
+                labelStyle: TextStyle(color: context.wishlyInk, fontWeight: FontWeight.w600),
               ),
             ),
           _chip('Todas', _filter == null, () => setState(() => _filter = null)),
@@ -119,7 +124,7 @@ class _GroupedItemsState extends State<GroupedItems> {
                   child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
                 )
               else
-                for (final item in group.items) Padding(padding: const EdgeInsets.only(bottom: WishlySpace.s4), child: widget.cardBuilder(item, false)),
+                _groupItems(group, wide: false),
               const SizedBox(height: WishlySpace.s2),
             ],
           ],
@@ -146,11 +151,8 @@ class _GroupedItemsState extends State<GroupedItems> {
                       padding: EdgeInsets.only(bottom: WishlySpace.s4),
                       child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
                     )
-                  else if (widget.wide)
-                    ItemWrap(count: group.items.length, itemBuilder: (index) => widget.cardBuilder(group.items[index], false))
                   else
-                    for (final item in group.items)
-                      Padding(padding: const EdgeInsets.only(bottom: WishlySpace.s4), child: widget.cardBuilder(item, false)),
+                    _groupItems(group, wide: widget.wide),
                   const SizedBox(height: WishlySpace.s2),
                 ],
               ],
@@ -169,10 +171,25 @@ class _GroupedItemsState extends State<GroupedItems> {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        selectedColor: WishlyTokens.chip,
-        checkmarkColor: QueroColors.ink,
-        labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
+        selectedColor: context.wishlyChip,
+        checkmarkColor: context.wishlyInk,
+        labelStyle: TextStyle(color: context.wishlyInk, fontWeight: FontWeight.w600),
       ),
+    );
+  }
+
+  Widget _groupItems(ItemGroup group, {required bool wide}) {
+    if (widget.onReorder == null || group.items.length < 2) {
+      if (wide) return ItemWrap(count: group.items.length, itemBuilder: (index) => widget.cardBuilder(group.items[index], false));
+      return Column(
+        children: [for (final item in group.items) Padding(padding: const EdgeInsets.only(bottom: WishlySpace.s4), child: widget.cardBuilder(item, false))],
+      );
+    }
+    return ReorderableItemList(
+      items: group.items,
+      wide: wide,
+      onReorder: (oldIndex, newIndex) => widget.onReorder!(group.id, oldIndex, newIndex),
+      cardBuilder: (item) => widget.cardBuilder(item, false),
     );
   }
 
@@ -206,11 +223,11 @@ class _GroupedItemsState extends State<GroupedItems> {
                   ),
                   if (remaining != null) ...[
                     const SizedBox(width: WishlySpace.s3),
-                    Text(remaining, style: fraunces(WishlyText.lg, color: QueroColors.forest)),
+                    Text(remaining, style: fraunces(WishlyText.lg, color: context.wishlyForest)),
                   ],
                   if (bought != null) ...[
                     const SizedBox(width: WishlySpace.s2),
-                    Text(bought, style: fraunces(WishlyText.base, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
+                    Text(bought, style: fraunces(WishlyText.base, color: context.wishlyMuted).copyWith(decoration: TextDecoration.lineThrough)),
                   ],
                 ],
               ),
@@ -224,6 +241,72 @@ class _GroupedItemsState extends State<GroupedItems> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class ReorderableItemList extends StatelessWidget {
+  const ReorderableItemList({super.key, required this.items, required this.wide, required this.cardBuilder, required this.onReorder});
+
+  final List<WishItem> items;
+  final bool wide;
+  final Widget Function(WishItem item) cardBuilder;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!wide) {
+      return ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: true,
+        itemCount: items.length,
+        onReorderItem: onReorder,
+        itemBuilder: (context, index) {
+          return Padding(
+            key: ValueKey(items[index].id),
+            padding: const EdgeInsets.only(bottom: WishlySpace.s4),
+            child: cardBuilder(items[index]),
+          );
+        },
+      );
+    }
+    return ItemWrap(
+      count: items.length,
+      itemBuilder: (index) {
+        final item = items[index];
+        return DragTarget<int>(
+          onAcceptWithDetails: (details) {
+            final from = details.data;
+            if (from == index) return;
+            onReorder(from, index);
+          },
+          builder: (context, candidate, rejected) {
+            return LongPressDraggable<int>(
+              data: index,
+              dragAnchorStrategy: pointerDragAnchorStrategy,
+              feedback: SizedBox(width: WishlyCard.maxWidth, child: Material(elevation: WishlySpace.s2, child: cardBuilder(item))),
+              childWhenDragging: Opacity(opacity: WishlyOpacity.placeholder, child: cardBuilder(item)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Align(
+                    alignment: Alignment.centerRight,
+                    child: Icon(Icons.drag_indicator, size: WishlyIcon.md, semanticLabel: 'Segure e arraste para reordenar'),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(WishlyCard.radius),
+                      border: candidate.isEmpty ? null : Border.all(color: QueroColors.accent, width: WishlySize.stroke),
+                    ),
+                    child: cardBuilder(item),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
 import 'models.dart';
 import 'money.dart';
@@ -35,6 +36,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   String? _error;
   String? _busyId;
   var _hidePurchased = false;
+  var _query = '';
+  var _sort = 'manual';
+  var _priority = 'todas';
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   var _started = false;
@@ -68,10 +72,100 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
+    _loadSort();
     _load();
   }
 
+  Future<void> _loadSort() async {
+    final saved = (await SharedPreferences.getInstance()).getString('wishly_sort_${widget.listId}');
+    if (!mounted || saved == null) return;
+    const allowed = {'manual', 'price_asc', 'price_desc', 'date', 'store', 'name', 'priority'};
+    if (allowed.contains(saved)) setState(() => _sort = saved);
+  }
+
+  Future<void> _setSort(String value) async {
+    setState(() => _sort = value);
+    await (await SharedPreferences.getInstance()).setString('wishly_sort_${widget.listId}', value);
+  }
+
   WishlistSnapshot get _snapshot => WishlistSnapshot(items: _items, unpricedCount: _items.where((item) => item.price == null).length, title: _list?.name);
+
+  List<WishItem> _arranged(List<WishItem> source) {
+    final query = _query.trim().toLowerCase();
+    final items = source.where((item) {
+      if (_priority != 'todas' && item.priority != _priority) return false;
+      if (query.isEmpty) return true;
+      final details = '${item.colorName ?? ''} ${item.sizeLabel ?? ''} ${item.voltage ?? ''}';
+      return item.name.toLowerCase().contains(query) || (item.store ?? '').toLowerCase().contains(query) || (item.note ?? '').toLowerCase().contains(query) || details.toLowerCase().contains(query);
+    }).toList();
+    int priorityRank(String value) => switch (value) { 'muito' => 0, 'talvez' => 2, _ => 1 };
+    switch (_sort) {
+      case 'price_asc':
+        items.sort((a, b) => (a.price ?? 1e12).compareTo(b.price ?? 1e12));
+      case 'price_desc':
+        items.sort((a, b) => (b.price ?? -1).compareTo(a.price ?? -1));
+      case 'name':
+        items.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      case 'store':
+        items.sort((a, b) => (a.store ?? '').toLowerCase().compareTo((b.store ?? '').toLowerCase()));
+      case 'priority':
+        items.sort((a, b) => priorityRank(a.priority).compareTo(priorityRank(b.priority)));
+      case 'date':
+        items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      default:
+        items.sort((a, b) {
+          final byPosition = a.position.compareTo(b.position);
+          if (byPosition != 0) return byPosition;
+          return a.createdAt.compareTo(b.createdAt);
+        });
+    }
+    return items;
+  }
+
+  bool get _canReorder => (_list?.canEdit ?? false) && _sort == 'manual' && _query.trim().isEmpty && _priority == 'todas' && !_hidePurchased;
+
+  List<String> _idsAfterMove(String? categoryId, int oldIndex, int newIndex) {
+    final byCategory = <String?, List<WishItem>>{};
+    for (final item in _items) {
+      byCategory.putIfAbsent(item.categoryId, () => []).add(item);
+    }
+    for (final group in byCategory.values) {
+      group.sort((a, b) => a.position.compareTo(b.position));
+    }
+    final group = [...?byCategory[categoryId]];
+    final moved = group.removeAt(oldIndex);
+    group.insert(newIndex, moved);
+    byCategory[categoryId] = group;
+    final ids = <String>[];
+    final seen = <String>{};
+    final categories = [..._categories]..sort((a, b) => a.position.compareTo(b.position));
+    for (final category in categories) {
+      for (final item in byCategory[category.id] ?? const <WishItem>[]) {
+        if (seen.add(item.id)) ids.add(item.id);
+      }
+    }
+    for (final item in byCategory[null] ?? const <WishItem>[]) {
+      if (seen.add(item.id)) ids.add(item.id);
+    }
+    for (final item in _items) {
+      if (seen.add(item.id)) ids.add(item.id);
+    }
+    return ids;
+  }
+
+  Future<void> _reorderGroup(String? categoryId, int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || newIndex < 0 || oldIndex == newIndex) return;
+    final ids = _idsAfterMove(categoryId, oldIndex, newIndex);
+    final rank = {for (var index = 0; index < ids.length; index++) ids[index]: index};
+    setState(() => _items = [for (final item in _items) item.withPosition(rank[item.id] ?? item.position)]);
+    try {
+      await SessionScope.of(context).api.reorderItems(widget.listId, ids);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      _load();
+    }
+  }
 
   Future<void> _load() async {
     setState(() {
@@ -213,7 +307,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: QueroColors.cream,
+        backgroundColor: context.wishlyCream,
         title: Text('Excluir este item?', style: fraunces(WishlyText.xl2)),
         content: Text('“${item.name}” sai da lista.'),
         actions: [
@@ -292,7 +386,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: QueroColors.cream,
+        backgroundColor: context.wishlyCream,
         title: Text('Compartilhar', style: fraunces(WishlyText.xl2)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -356,7 +450,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         final isOwner = _list?.isOwner == true;
         final board = _Board(
           title: name,
-          items: _items,
+          items: _arranged(_items),
           loading: _loading,
           error: _error,
           busyId: _busyId,
@@ -384,6 +478,15 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           onHidePurchased: (value) => setState(() => _hidePurchased = value),
           onDelete: _delete,
           onUnreserve: _clearReservation,
+          budget: _list?.budget,
+          budgetCurrency: _list?.budgetCurrency,
+          query: _query,
+          onQuery: (value) => setState(() => _query = value),
+          sort: _sort,
+          onSort: _setSort,
+          priority: _priority,
+          onPriority: (value) => setState(() => _priority = value),
+          onReorder: _canReorder ? _reorderGroup : null,
         );
         final sidebar = ListSidebar(
           lists: _allLists,
@@ -403,7 +506,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
         if (!wide) {
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: QueroColors.paper,
+            backgroundColor: context.wishlyPaper,
             drawer: Drawer(backgroundColor: QueroColors.ink, child: sidebar),
             floatingActionButton: canEdit
                 ? FloatingActionButton.extended(
@@ -418,7 +521,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           );
         }
         return Scaffold(
-          backgroundColor: QueroColors.paper,
+          backgroundColor: context.wishlyPaper,
           body: Row(children: [sidebar, Expanded(child: board)]),
         );
       },
@@ -447,7 +550,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          backgroundColor: QueroColors.cream,
+          backgroundColor: context.wishlyCream,
           title: Text('Já comprei', style: fraunces(WishlyText.xl2)),
           content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'Seu nome (opcional)')),
           actions: [
@@ -515,7 +618,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: QueroColors.cream,
+        backgroundColor: context.wishlyCream,
         title: Text('Excluir “${list.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('A lista e os itens saem da sua conta. O link compartilhado deixa de funcionar.'),
         actions: [
@@ -573,7 +676,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: QueroColors.paper,
+        backgroundColor: context.wishlyPaper,
         builder: (context) => Padding(
           padding: EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s4, WishlySpace.s5, WishlySpace.s5 + MediaQuery.viewInsetsOf(context).bottom),
           child: panel,
@@ -584,7 +687,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     await showDialog<void>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: QueroColors.paper,
+        backgroundColor: context.wishlyPaper,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: WishlySize.sheet),
@@ -600,7 +703,7 @@ Future<String?> _askListName(BuildContext context, {String title = 'Nova lista',
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: QueroColors.cream,
+      backgroundColor: context.wishlyCream,
       title: Text(title, style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Nome da lista')),
       actions: [
@@ -646,6 +749,15 @@ class _Board extends StatelessWidget {
     required this.onHidePurchased,
     required this.onDelete,
     required this.onUnreserve,
+    this.budget,
+    this.budgetCurrency,
+    this.query = '',
+    this.onQuery,
+    this.sort = 'manual',
+    this.onSort,
+    this.priority = 'todas',
+    this.onPriority,
+    this.onReorder,
   });
 
   final String title;
@@ -677,10 +789,19 @@ class _Board extends StatelessWidget {
   final ValueChanged<bool> onHidePurchased;
   final void Function(WishItem) onDelete;
   final void Function(WishItem) onUnreserve;
+  final double? budget;
+  final String? budgetCurrency;
+  final String query;
+  final ValueChanged<String>? onQuery;
+  final String sort;
+  final ValueChanged<String>? onSort;
+  final String priority;
+  final ValueChanged<String>? onPriority;
+  final void Function(String? categoryId, int oldIndex, int newIndex)? onReorder;
 
   @override
   Widget build(BuildContext context) {
-    if (narrow) return _narrowBoard();
+    if (narrow) return _narrowBoard(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(wide ? WishlySpace.s8 : WishlySpace.s4, wide ? WishlySpace.s5 : WishlySpace.s2, wide ? WishlySpace.s8 : WishlySpace.s4, WishlySpace.s2),
       child: Column(
@@ -703,19 +824,21 @@ class _Board extends StatelessWidget {
                 if (onMembers != null) IconButton(onPressed: onMembers, tooltip: 'Membros', icon: const Icon(Icons.group_outlined)),
                 if (onCategories != null) IconButton(onPressed: onCategories, tooltip: 'Categorias', icon: const Icon(Icons.category_outlined)),
                 if (onShare != null) IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
+                const _Bell(),
                 IconButton(onPressed: onReload, tooltip: 'Recarregar', icon: const Icon(Icons.refresh)),
               ],
             ),
           ),
-          if (!wide) _TotalBlock(snapshot: snapshot, onDark: false),
+          if (!wide) _TotalBlock(snapshot: snapshot, onDark: false, budget: budget, budgetCurrency: budgetCurrency),
+          _FindSort(query: query, onQuery: onQuery, sort: sort, onSort: onSort, priority: priority, onPriority: onPriority),
           const SizedBox(height: WishlySpace.s2),
-          Expanded(child: _content()),
+          Expanded(child: _content(context)),
         ],
       ),
     );
   }
 
-  Widget _narrowBoard() {
+  Widget _narrowBoard(BuildContext context) {
     return RefreshIndicator(
       color: QueroColors.ink,
       onRefresh: onReload,
@@ -724,15 +847,16 @@ class _Board extends StatelessWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: QueroColors.paper,
+            backgroundColor: context.wishlyPaper,
             surfaceTintColor: QueroColors.paper,
-            foregroundColor: QueroColors.ink,
+            foregroundColor: context.wishlyInk,
             elevation: WishlyElevation.none,
             scrolledUnderElevation: WishlyElevation.none,
             toolbarHeight: kToolbarHeight,
             expandedHeight: kToolbarHeight + WishlySize.headerExtra,
             leading: IconButton(onPressed: onMenu, tooltip: 'Listas', icon: const Icon(Icons.menu)),
             actions: [
+              const _Bell(),
               if (onShare != null) IconButton(onPressed: onShare, tooltip: 'Compartilhar', icon: const Icon(Icons.ios_share)),
               PopupMenuButton<String>(
                 tooltip: 'Mais',
@@ -768,19 +892,25 @@ class _Board extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s1, WishlySpace.s4, WishlySpace.s2),
-              child: _TotalBlock(snapshot: snapshot, onDark: false),
+              child: _TotalBlock(snapshot: snapshot, onDark: false, budget: budget, budgetCurrency: budgetCurrency),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s4),
+              child: _FindSort(query: query, onQuery: onQuery, sort: sort, onSort: onSort, priority: priority, onPriority: onPriority),
             ),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s1, WishlySpace.s4, WishlySpace.s16 + WishlySpace.s12),
-            sliver: _narrowBody(),
+            sliver: _narrowBody(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _narrowBody() {
+  Widget _narrowBody(BuildContext context) {
     if (loading) {
       return const SliverFillRemaining(hasScrollBody: false, child: PageSkeleton(cards: 2));
     }
@@ -806,12 +936,14 @@ class _Board extends StatelessWidget {
       );
     }
     if (categories.isEmpty) {
-      final shown = sortedWishItems(hidePurchased ? items.where((item) => !item.purchased) : items);
+      final shown = hidePurchased ? items.where((item) => !item.purchased).toList() : items;
       return SliverMainAxisGroup(
         slivers: [
-          SliverToBoxAdapter(child: _hideChip()),
+          SliverToBoxAdapter(child: _hideChip(context)),
           if (shown.isEmpty)
             const SliverFillRemaining(hasScrollBody: false, child: EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.'))
+          else if (onReorder != null)
+            SliverToBoxAdapter(child: ReorderableItemList(items: shown, wide: false, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: _card))
           else
             SliverList.separated(
               itemCount: shown.length,
@@ -830,12 +962,14 @@ class _Board extends StatelessWidget {
         hidePurchased: hidePurchased,
         onHidePurchased: onHidePurchased,
         onAddInCategory: onAddInCategory,
+        keepOrder: true,
+        onReorder: onReorder,
         cardBuilder: (item, fill) => _card(item),
       ),
     );
   }
 
-  Widget _content() {
+  Widget _content(BuildContext context) {
     if (loading) return const PageSkeleton(cards: 2);
     if (error != null && items.isEmpty) {
       return Center(
@@ -852,22 +986,27 @@ class _Board extends StatelessWidget {
     if (items.isEmpty && categories.isEmpty) {
       return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')]));
     }
-    final shown = sortedWishItems(hidePurchased ? items.where((item) => !item.purchased) : items);
+    final shown = hidePurchased ? items.where((item) => !item.purchased).toList() : items;
     if (categories.isEmpty) {
       final body = shown.isEmpty
           ? const EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')
-          : wide
+          : onReorder != null
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: [ItemWrap(count: shown.length, itemBuilder: (index) => _card(shown[index]))],
+                  children: [ReorderableItemList(items: shown, wide: wide, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: _card)],
                 )
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: shown.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
-                  itemBuilder: (context, index) => _card(shown[index]),
-                );
-      return _pull(Column(children: [_hideChip(), Expanded(child: body)]));
+              : wide
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [ItemWrap(count: shown.length, itemBuilder: (index) => _card(shown[index]))],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: shown.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
+                      itemBuilder: (context, index) => _card(shown[index]),
+                    );
+      return _pull(Column(children: [_hideChip(context), Expanded(child: body)]));
     }
     return GroupedItems(
       categories: categories,
@@ -877,20 +1016,22 @@ class _Board extends StatelessWidget {
       hidePurchased: hidePurchased,
       onHidePurchased: onHidePurchased,
       onAddInCategory: onAddInCategory,
+      keepOrder: true,
+      onReorder: onReorder,
       cardBuilder: (item, fill) => _card(item),
     );
   }
 
-  Widget _hideChip() {
+  Widget _hideChip(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: FilterChip(
         label: const Text('Ocultar comprados'),
         selected: hidePurchased,
         onSelected: onHidePurchased,
-        selectedColor: WishlyTokens.chip,
-        checkmarkColor: QueroColors.ink,
-        labelStyle: const TextStyle(color: QueroColors.ink, fontWeight: FontWeight.w600),
+        selectedColor: context.wishlyChip,
+        checkmarkColor: context.wishlyInk,
+        labelStyle: TextStyle(color: context.wishlyInk, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -975,7 +1116,7 @@ class _CategoryManagerState extends State<_CategoryManager> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: QueroColors.cream,
+        backgroundColor: context.wishlyCream,
         title: Text('Excluir “${category.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('Os itens dessa categoria passam para Sem categoria.'),
         actions: [
@@ -1017,7 +1158,7 @@ class _CategoryManagerState extends State<_CategoryManager> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: QueroColors.cream,
+      backgroundColor: context.wishlyCream,
       title: Text('Categorias', style: fraunces(WishlyText.xl2)),
       content: SizedBox(
         width: WishlySize.field,
@@ -1064,7 +1205,7 @@ Future<String?> _askCategoryName(BuildContext context) async {
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: QueroColors.cream,
+      backgroundColor: context.wishlyCream,
       title: Text('Renomear', style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true),
       actions: [
@@ -1123,9 +1264,11 @@ class _CollapsingListTitle extends StatelessWidget {
 }
 
 class _TotalBlock extends StatelessWidget {
-  const _TotalBlock({required this.snapshot, required this.onDark});
+  const _TotalBlock({required this.snapshot, required this.onDark, this.budget, this.budgetCurrency});
   final WishlistSnapshot snapshot;
   final bool onDark;
+  final double? budget;
+  final String? budgetCurrency;
 
   @override
   Widget build(BuildContext context) {
@@ -1142,6 +1285,19 @@ class _TotalBlock extends StatelessWidget {
         else
           for (final total in totals)
             Text(formatMoney(total.amount, total.currency.isEmpty ? null : total.currency), style: fraunces(onDark ? WishlyText.xl3 : WishlyText.xl2, color: value)),
+        if (budget != null && budget! > 0) ...[
+          const SizedBox(height: WishlySpace.s2),
+          Text('ORÇAMENTO', style: TextStyle(color: label, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
+          const SizedBox(height: WishlySpace.s1),
+          LinearProgressIndicator(
+            value: ((snapshot.purchasedTotals.isEmpty ? 0 : snapshot.purchasedTotals.first.amount) / budget!).clamp(0, 1).toDouble(),
+            minHeight: WishlySpace.s2,
+            color: QueroColors.forest,
+            backgroundColor: QueroColors.line,
+            borderRadius: BorderRadius.circular(WishlyRadius.full),
+          ),
+          Text('Comprado de ${formatMoney(budget!, budgetCurrency)}', style: TextStyle(color: label, fontSize: WishlyText.xs)),
+        ],
         if (snapshot.purchasedTotals.isNotEmpty) ...[
           const SizedBox(height: WishlySpace.s2),
           Text('JÁ COMPRADO', style: TextStyle(color: label, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
@@ -1152,6 +1308,166 @@ class _TotalBlock extends StatelessWidget {
             ),
         ],
       ],
+    );
+  }
+}
+
+class _FindSort extends StatefulWidget {
+  const _FindSort({required this.query, required this.sort, required this.priority, this.onQuery, this.onSort, this.onPriority});
+
+  final String query;
+  final String sort;
+  final String priority;
+  final ValueChanged<String>? onQuery;
+  final ValueChanged<String>? onSort;
+  final ValueChanged<String>? onPriority;
+
+  @override
+  State<_FindSort> createState() => _FindSortState();
+}
+
+class _FindSortState extends State<_FindSort> {
+  late final TextEditingController _query;
+
+  @override
+  void initState() {
+    super.initState();
+    _query = TextEditingController(text: widget.query);
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: WishlySpace.s2, bottom: WishlySpace.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _query,
+                  decoration: const InputDecoration(hintText: 'Buscar nome, loja ou nota', isDense: true),
+                  onChanged: widget.onQuery,
+                ),
+              ),
+              const SizedBox(width: WishlySpace.s2),
+              DropdownButton<String>(
+                value: widget.sort,
+                items: const [
+                  DropdownMenuItem(value: 'manual', child: Text('Manual')),
+                  DropdownMenuItem(value: 'price_asc', child: Text('Preço ↑')),
+                  DropdownMenuItem(value: 'price_desc', child: Text('Preço ↓')),
+                  DropdownMenuItem(value: 'date', child: Text('Data')),
+                  DropdownMenuItem(value: 'store', child: Text('Loja')),
+                  DropdownMenuItem(value: 'name', child: Text('Nome')),
+                  DropdownMenuItem(value: 'priority', child: Text('Prioridade')),
+                ],
+                onChanged: (value) {
+                  if (value != null) widget.onSort?.call(value);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: WishlySpace.s2),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final choice in const [('todas', 'Todas'), ('muito', 'Muito quero'), ('quero', 'Quero'), ('talvez', 'Talvez')])
+                  Padding(
+                    padding: const EdgeInsets.only(right: WishlySpace.s2),
+                    child: FilterChip(
+                      label: Text(choice.$2),
+                      selected: widget.priority == choice.$1,
+                      onSelected: (_) => widget.onPriority?.call(choice.$1),
+                      selectedColor: context.wishlyChip,
+                      checkmarkColor: context.wishlyInk,
+                      labelStyle: TextStyle(color: context.wishlyInk, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Bell extends StatefulWidget {
+  const _Bell();
+
+  @override
+  State<_Bell> createState() => _BellState();
+}
+
+class _BellState extends State<_Bell> {
+  int _unread = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final notes = await SessionScope.of(context).api.notifications();
+      if (mounted) setState(() => _unread = notes.unread);
+    } catch (_) {}
+  }
+
+  Future<void> _open() async {
+    final api = SessionScope.of(context).api;
+    final notes = await api.notifications();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.wishlyCream,
+        title: Text('Avisos', style: fraunces(WishlyText.xl2)),
+        content: SizedBox(
+          width: WishlySize.field,
+          child: notes.items.isEmpty
+              ? const Text('Nenhuma queda de preço por aqui.')
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final note in notes.items.take(8))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: WishlySpace.s3),
+                        child: Text('${note['title']}\n${note['body']}', style: const TextStyle(fontSize: WishlyText.sm, height: WishlyText.body)),
+                      ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar')),
+        ],
+      ),
+    );
+    await api.readNotifications();
+    if (mounted) setState(() => _unread = 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Avisos',
+      onPressed: _open,
+      icon: Badge(
+        isLabelVisible: _unread > 0,
+        label: Text('$_unread'),
+        child: const Icon(Icons.notifications_outlined, size: WishlyIcon.lg),
+      ),
     );
   }
 }

@@ -208,6 +208,13 @@ class QueroApi {
     String? categoryId,
     bool setCategory = false,
     bool? purchased,
+    String? priority,
+    String? note,
+    String? colorName,
+    String? sizeLabel,
+    String? voltage,
+    int? quantity,
+    bool setQuantity = false,
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;
@@ -225,8 +232,43 @@ class QueroApi {
     if (currency != null) payload['currency'] = currency;
     if (setCategory) payload['category_id'] = categoryId;
     if (purchased != null) payload['purchased'] = purchased;
+    if (priority != null) payload['priority'] = priority;
+    if (note != null) payload['note'] = note;
+    if (colorName != null) payload['color'] = colorName;
+    if (sizeLabel != null) payload['size_label'] = sizeLabel;
+    if (voltage != null) payload['voltage'] = voltage;
+    if (setQuantity) payload['quantity'] = quantity;
     final response = await _send('PATCH', '/api/items/$id', payload);
     return WishItem.fromJson(_jsonMap(response));
+  }
+
+  Future<({int unread, List<Map<String, dynamic>> items})> notifications() async {
+    final body = _jsonMap(await _send('GET', '/api/notifications'));
+    final raw = body['notifications'];
+    return (
+      unread: (body['unread'] as num?)?.toInt() ?? 0,
+      items: [if (raw is List) for (final entry in raw) if (entry is Map) Map<String, dynamic>.from(entry)],
+    );
+  }
+
+  Future<void> readNotifications() async {
+    await _send('POST', '/api/notifications/read');
+  }
+
+  Future<WishList> updateListSettings(String id, {bool? showReservations, bool? reservationsEnabled, double? budget, bool clearBudget = false}) async {
+    final payload = <String, dynamic>{};
+    if (showReservations != null) payload['show_reservations'] = showReservations;
+    if (reservationsEnabled != null) payload['reservations_enabled'] = reservationsEnabled;
+    if (clearBudget) {
+      payload['budget'] = null;
+    } else if (budget != null) {
+      payload['budget'] = budget;
+    }
+    return WishList.fromJson(_jsonMap(await _send('PATCH', '/api/lists/$id/settings', payload)));
+  }
+
+  Future<void> reorderItems(String listId, List<String> ids) async {
+    await _send('POST', '/api/lists/$listId/items/reorder', {'ids': ids});
   }
 
   Future<WishItem> refreshItem(String id) async {

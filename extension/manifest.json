@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Wishly",
+  "version": "1.0.0",
+  "description": "Guarda a página aberta numa lista da Wishly.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Adicionar à Wishly"
+  },
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://lista-desejos-backend.onrender.com/*",
+    "http://127.0.0.1:47231/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wishly@wishly.app",
+      "strict_min_version": "109.0"
+    }
+  }
+}

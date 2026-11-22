@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'api.dart';
 import 'models.dart';
 import 'money.dart';
+import 'install.dart';
 import 'session.dart';
 import 'theme.dart';
 import 'widgets/empty_state.dart';
@@ -88,7 +89,7 @@ class _ListsPageState extends State<ListsPage> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: QueroColors.cream,
+        backgroundColor: context.wishlyCream,
         title: Text('Excluir “${list.name}”?', style: fraunces(WishlyText.xl2)),
         content: const Text('A lista e os itens saem da sua conta. O link compartilhado deixa de funcionar.'),
         actions: [
@@ -123,7 +124,7 @@ class _ListsPageState extends State<ListsPage> {
   Widget build(BuildContext context) {
     final email = SessionScope.of(context).user?.email ?? '';
     return Scaffold(
-      backgroundColor: QueroColors.paper,
+      backgroundColor: context.wishlyPaper,
       body: Column(
         children: [
           ColoredBox(
@@ -143,6 +144,16 @@ class _ListsPageState extends State<ListsPage> {
                         ],
                       ),
                     ),
+                    PopupMenuButton<ThemeMode>(
+                      tooltip: 'Aparência',
+                      icon: const Icon(Icons.contrast, color: QueroColors.cream),
+                      onSelected: (mode) => ThemeChoice.of(context).onChanged(mode),
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: ThemeMode.system, child: Text('Sistema')),
+                        PopupMenuItem(value: ThemeMode.light, child: Text('Claro')),
+                        PopupMenuItem(value: ThemeMode.dark, child: Text('Escuro')),
+                      ],
+                    ),
                     TextButton(onPressed: _logout, child: const Text('Sair', style: TextStyle(color: QueroColors.cream))),
                   ],
                 ),
@@ -159,6 +170,24 @@ class _ListsPageState extends State<ListsPage> {
                     children: [
                       Text('Suas listas', style: fraunces(WishlyText.xl3)),
                       const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          if (canInstallApp()) {
+                            promptInstall();
+                            return;
+                          }
+                          showDialog<void>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: context.wishlyCream,
+                              title: Text('Instalar app', style: fraunces(WishlyText.xl2)),
+                              content: const Text('No Chrome ou Edge, use o menu do navegador e escolha Instalar. No iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início.'),
+                              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+                            ),
+                          );
+                        },
+                        child: const Text('Instalar app'),
+                      ),
                       FilledButton(
                         onPressed: _create,
                         style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
@@ -210,7 +239,7 @@ class _ListsPageState extends State<ListsPage> {
         : formatMoney(list.totals.first.amount, list.totals.first.currency.isEmpty ? null : list.totals.first.currency);
     final bought = list.purchasedTotals.isEmpty ? null : formatMoney(list.purchasedTotals.first.amount, list.purchasedTotals.first.currency.isEmpty ? null : list.purchasedTotals.first.currency);
     return Material(
-      color: QueroColors.cream,
+      color: context.wishlyCream,
       borderRadius: BorderRadius.circular(WishlyRadius.xl2),
       child: InkWell(
         borderRadius: BorderRadius.circular(WishlyRadius.xl2),
@@ -231,10 +260,10 @@ class _ListsPageState extends State<ListsPage> {
                 MemberAvatars(members: list.members),
               ],
               const SizedBox(height: WishlySpace.s2),
-              Text(list.itemCount == 1 ? '1 item' : '${list.itemCount} itens', style: const TextStyle(color: QueroColors.muted)),
+              Text(list.itemCount == 1 ? '1 item' : '${list.itemCount} itens', style: TextStyle(color: context.wishlyMuted)),
               const SizedBox(height: WishlySpace.s2),
-              Text('Falta comprar $total', style: fraunces(WishlyText.xl, color: QueroColors.forest)),
-              if (bought != null) Text('Já comprado $bought', style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough)),
+              Text('Falta comprar $total', style: fraunces(WishlyText.xl, color: context.wishlyForest)),
+              if (bought != null) Text('Já comprado $bought', style: TextStyle(color: context.wishlyMuted, decoration: TextDecoration.lineThrough)),
               Row(
                 children: [
                   if (!list.collaborative && list.shareToken != null)
@@ -260,7 +289,7 @@ Future<String?> _askName(BuildContext context, {required String title, required 
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: QueroColors.cream,
+      backgroundColor: context.wishlyCream,
       title: Text(title, style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Nome da lista')),
       actions: [

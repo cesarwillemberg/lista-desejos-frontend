@@ -61,7 +61,7 @@ class _SharedPageState extends State<SharedPage> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          backgroundColor: QueroColors.cream,
+          backgroundColor: context.wishlyCream,
           title: Text('Já comprei', style: fraunces(WishlyText.xl2)),
           content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'Seu nome (opcional)')),
           actions: [
@@ -113,7 +113,7 @@ class _SharedPageState extends State<SharedPage> {
     final snapshot = _snapshot;
     final title = snapshot?.title ?? 'Lista compartilhada';
     return Scaffold(
-      backgroundColor: QueroColors.paper,
+      backgroundColor: context.wishlyPaper,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

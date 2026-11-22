@@ -11,6 +11,15 @@
     "description": "Lista de desejos com foto e preço vindos da loja.",
     "orientation": "any",
     "prefer_related_applications": false,
+    "share_target": {
+        "action": "./",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    },
     "icons": [
         {
             "src": "icons/Icon-192.png",

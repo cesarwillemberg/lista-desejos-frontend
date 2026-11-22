@@ -12,6 +12,8 @@ class AddPanel extends StatefulWidget {
     required this.onCreated,
     this.categories = const [],
     this.initialCategoryId,
+    this.initialUrl,
+    this.initialName,
     this.onCategoryCreated,
     this.onDark = false,
   });
@@ -20,6 +22,8 @@ class AddPanel extends StatefulWidget {
   final String listId;
   final List<WishCategory> categories;
   final String? initialCategoryId;
+  final String? initialUrl;
+  final String? initialName;
   final ValueChanged<WishCategory>? onCategoryCreated;
   final ValueChanged<WishItem> onCreated;
   final bool onDark;
@@ -29,8 +33,8 @@ class AddPanel extends StatefulWidget {
 }
 
 class _AddPanelState extends State<AddPanel> {
-  final _name = TextEditingController();
-  final _url = TextEditingController();
+  late final TextEditingController _name;
+  late final TextEditingController _url;
   String? _categoryId;
   bool _busy = false;
   String? _error;
@@ -39,6 +43,8 @@ class _AddPanelState extends State<AddPanel> {
   void initState() {
     super.initState();
     _categoryId = widget.initialCategoryId;
+    _name = TextEditingController(text: widget.initialName ?? '');
+    _url = TextEditingController(text: widget.initialUrl ?? '');
   }
 
   @override
@@ -106,7 +112,7 @@ Future<String?> _askCategoryName(BuildContext context) {
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: QueroColors.cream,
+      backgroundColor: context.wishlyCream,
       title: Text('Nova categoria', style: fraunces(WishlyText.xl2)),
       content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: 'Ex.: Cozinha')),
       actions: [

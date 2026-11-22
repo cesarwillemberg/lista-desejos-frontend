@@ -82,6 +82,19 @@
       if (splash) splash.remove();
     });
   </script>
+  <script>
+    window.wishlyInstall = null;
+    window.wishlyCanInstall = function () { return !!window.wishlyInstall; };
+    window.wishlyPromptInstall = function () {
+      if (!window.wishlyInstall) return;
+      window.wishlyInstall.prompt();
+      window.wishlyInstall = null;
+    };
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.wishlyInstall = event;
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     if ('serviceWorker' in navigator) {
