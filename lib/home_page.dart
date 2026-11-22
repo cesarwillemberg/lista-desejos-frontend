@@ -367,6 +367,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           api: api,
           canEdit: canEdit,
           onAdd: canEdit ? () => _openAdd(api, wide: wide) : null,
+          onAddInCategory: canEdit ? (categoryId) => _openAdd(api, wide: wide, categoryId: categoryId) : null,
           onCategories: canEdit ? _manageCategories : null,
           onMembers: _list == null ? null : _openMembers,
           onMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
@@ -554,13 +555,14 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     }
   }
 
-  Future<void> _openAdd(QueroApi api, {required bool wide}) async {
+  Future<void> _openAdd(QueroApi api, {required bool wide, String? categoryId}) async {
     final list = _list;
     if (list == null) return;
     final panel = AddPanel(
       api: api,
       listId: list.id,
       categories: _categories,
+      initialCategoryId: categoryId,
       onCategoryCreated: (category) => setState(() => _categories = [..._categories, category]),
       onCreated: (item) {
         Navigator.pop(context);
@@ -627,6 +629,7 @@ class _Board extends StatelessWidget {
     required this.api,
     required this.canEdit,
     this.onAdd,
+    this.onAddInCategory,
     this.onCategories,
     this.onMembers,
     this.onMenu,
@@ -657,6 +660,7 @@ class _Board extends StatelessWidget {
   final QueroApi api;
   final bool canEdit;
   final VoidCallback? onAdd;
+  final void Function(String? categoryId)? onAddInCategory;
   final VoidCallback? onCategories;
   final VoidCallback? onMembers;
   final VoidCallback? onMenu;
@@ -825,6 +829,7 @@ class _Board extends StatelessWidget {
         embedded: true,
         hidePurchased: hidePurchased,
         onHidePurchased: onHidePurchased,
+        onAddInCategory: onAddInCategory,
         cardBuilder: (item, fill) => _card(item),
       ),
     );
@@ -871,6 +876,7 @@ class _Board extends StatelessWidget {
       onRefresh: onReload,
       hidePurchased: hidePurchased,
       onHidePurchased: onHidePurchased,
+      onAddInCategory: onAddInCategory,
       cardBuilder: (item, fill) => _card(item),
     );
   }
@@ -1030,17 +1036,23 @@ class _CategoryManagerState extends State<_CategoryManager> {
                 ],
               ),
             const SizedBox(height: WishlySpace.s2),
-            TextField(controller: _name, decoration: const InputDecoration(hintText: 'Nova categoria'), onSubmitted: (_) => _add()),
+            TextField(
+              controller: _name,
+              decoration: const InputDecoration(hintText: 'Nova categoria'),
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _add(),
+            ),
             if (_error != null) Padding(padding: const EdgeInsets.only(top: WishlySpace.s2), child: Text(_error!, style: const TextStyle(color: QueroColors.danger))),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: _add, child: const Text('Adicionar')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar')),
         FilledButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _name.text.trim().isEmpty ? null : _add,
           style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
-          child: const Text('Fechar'),
+          child: const Text('Adicionar'),
         ),
       ],
     );

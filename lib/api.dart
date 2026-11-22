@@ -186,10 +186,11 @@ class QueroApi {
     return _categories(_jsonMap(response)['categories']);
   }
 
-  Future<WishItem> createItem({required String listId, required String name, required String url, String? categoryId}) async {
+  Future<WishItem> createItem({required String listId, String? name, required String url, String? categoryId}) async {
+    final trimmed = name?.trim() ?? '';
     final response = await _send('POST', '/api/lists/$listId/items', {
-      'name': name,
       'url': url,
+      if (trimmed.isNotEmpty) 'name': trimmed,
       'category_id': ?categoryId,
     });
     return WishItem.fromJson(_jsonMap(response));

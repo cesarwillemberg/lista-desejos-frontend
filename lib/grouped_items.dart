@@ -53,6 +53,7 @@ class GroupedItems extends StatefulWidget {
     required this.wide,
     required this.cardBuilder,
     this.onRefresh,
+    this.onAddInCategory,
     this.embedded = false,
     this.hidePurchased = false,
     this.onHidePurchased,
@@ -63,6 +64,7 @@ class GroupedItems extends StatefulWidget {
   final bool wide;
   final Widget Function(WishItem item, bool fillHeight) cardBuilder;
   final Future<void> Function()? onRefresh;
+  final void Function(String? categoryId)? onAddInCategory;
   final bool embedded;
   final bool hidePurchased;
   final ValueChanged<bool>? onHidePurchased;
@@ -179,35 +181,48 @@ class _GroupedItemsState extends State<GroupedItems> {
     final closed = _collapsed.contains(key);
     final remaining = group.remainingLabel;
     final bought = group.boughtLabel;
-    return InkWell(
-      onTap: () => setState(() {
-        if (closed) {
-          _collapsed.remove(key);
-        } else {
-          _collapsed.add(key);
-        }
-      }),
-      child: Padding(
-        padding: const EdgeInsets.only(top: WishlySpace.s2, bottom: WishlySpace.s3),
-        child: Row(
-          children: [
-            Icon(closed ? Icons.expand_more : Icons.expand_less, color: QueroColors.ink),
-            const SizedBox(width: WishlySpace.s1),
-            Expanded(child: Text(group.name, style: fraunces(WishlyText.xl2))),
-            Text(
-              '${group.items.length} ${group.items.length == 1 ? 'item' : 'itens'}',
-              style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
+    final addLabel = 'Adicionar item em ${group.name}';
+    return Padding(
+      padding: const EdgeInsets.only(top: WishlySpace.s2, bottom: WishlySpace.s3),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => setState(() {
+                if (closed) {
+                  _collapsed.remove(key);
+                } else {
+                  _collapsed.add(key);
+                }
+              }),
+              child: Row(
+                children: [
+                  Icon(closed ? Icons.expand_more : Icons.expand_less, color: QueroColors.ink, size: WishlyIcon.md),
+                  const SizedBox(width: WishlySpace.s1),
+                  Expanded(child: Text(group.name, style: fraunces(WishlyText.xl2))),
+                  Text(
+                    '${group.items.length} ${group.items.length == 1 ? 'item' : 'itens'}',
+                    style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
+                  ),
+                  if (remaining != null) ...[
+                    const SizedBox(width: WishlySpace.s3),
+                    Text(remaining, style: fraunces(WishlyText.lg, color: QueroColors.forest)),
+                  ],
+                  if (bought != null) ...[
+                    const SizedBox(width: WishlySpace.s2),
+                    Text(bought, style: fraunces(WishlyText.base, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
+                  ],
+                ],
+              ),
             ),
-            if (remaining != null) ...[
-              const SizedBox(width: WishlySpace.s3),
-              Text(remaining, style: fraunces(WishlyText.lg, color: QueroColors.forest)),
-            ],
-            if (bought != null) ...[
-              const SizedBox(width: WishlySpace.s2),
-              Text(bought, style: fraunces(WishlyText.base, color: QueroColors.muted).copyWith(decoration: TextDecoration.lineThrough)),
-            ],
-          ],
-        ),
+          ),
+          if (widget.onAddInCategory != null)
+            IconButton(
+              tooltip: addLabel,
+              onPressed: () => widget.onAddInCategory!(group.id),
+              icon: const Icon(Icons.add, size: WishlyIcon.md),
+            ),
+        ],
       ),
     );
   }

@@ -11,6 +11,7 @@ class AddPanel extends StatefulWidget {
     required this.listId,
     required this.onCreated,
     this.categories = const [],
+    this.initialCategoryId,
     this.onCategoryCreated,
     this.onDark = false,
   });
@@ -18,6 +19,7 @@ class AddPanel extends StatefulWidget {
   final QueroApi api;
   final String listId;
   final List<WishCategory> categories;
+  final String? initialCategoryId;
   final ValueChanged<WishCategory>? onCategoryCreated;
   final ValueChanged<WishItem> onCreated;
   final bool onDark;
@@ -34,6 +36,12 @@ class _AddPanelState extends State<AddPanel> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _categoryId = widget.initialCategoryId;
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _url.dispose();
@@ -43,10 +51,6 @@ class _AddPanelState extends State<AddPanel> {
   Future<void> _submit() async {
     final name = _name.text.trim();
     final url = _url.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = 'Informe um nome.');
-      return;
-    }
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(() => _error = 'Cole um link que comece com http:// ou https://.');
       return;
@@ -56,7 +60,7 @@ class _AddPanelState extends State<AddPanel> {
       _error = null;
     });
     try {
-      final item = await widget.api.createItem(listId: widget.listId, name: name, url: url, categoryId: _categoryId);
+      final item = await widget.api.createItem(listId: widget.listId, name: name.isEmpty ? null : name, url: url, categoryId: _categoryId);
       if (!mounted) return;
       _name.clear();
       _url.clear();
@@ -175,7 +179,7 @@ class AddForm extends StatelessWidget {
       children: [
         Text('NOVO ITEM', style: TextStyle(color: labelColor, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w600)),
         const SizedBox(height: WishlySpace.s4),
-        Text('Nome', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
+        Text('Nome (opcional)', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
         const SizedBox(height: WishlySpace.s2),
         TextField(
           controller: name,
@@ -183,7 +187,7 @@ class AddForm extends StatelessWidget {
           textInputAction: TextInputAction.next,
           style: TextStyle(color: text, fontSize: WishlyText.base),
           cursorColor: QueroColors.accent,
-          decoration: decoration('Ex.: Kindle Paperwhite'),
+          decoration: decoration('Se vazio, usamos o nome da página'),
         ),
         const SizedBox(height: WishlySpace.s4),
         Text('Link do produto', style: TextStyle(color: labelColor, fontSize: WishlyText.sm)),
