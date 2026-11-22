@@ -61,7 +61,7 @@ class _InvitePageState extends State<InvitePage> {
                     const SizedBox(height: WishlySpace.s4),
                     FilledButton(
                       onPressed: _accept,
-                      style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+                      style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
                       child: const Text('Tentar de novo'),
                     ),
                   ],

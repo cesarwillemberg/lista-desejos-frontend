@@ -109,7 +109,7 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Widget _form({required bool onDark}) {
-    final label = onDark ? WishlyTokens.onInkLabel : QueroColors.muted;
+    final label = onDark ? WishlyTokens.onInkLabel : context.wishlyMuted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,14 +133,14 @@ class _AuthPageState extends State<AuthPage> {
         ),
         if (_error != null) ...[
           const SizedBox(height: WishlySpace.s3),
-          Text(_error!, style: TextStyle(color: onDark ? WishlyTokens.onInkDanger : QueroColors.danger, height: WishlyText.body)),
+          Text(_error!, style: TextStyle(color: onDark ? WishlyColor.onInkDanger : context.wishlyDanger, height: WishlyText.body)),
         ],
         const SizedBox(height: WishlySpace.s4),
         FilledButton(
           onPressed: _busy ? null : _submit,
           style: FilledButton.styleFrom(
             backgroundColor: QueroColors.accent,
-            foregroundColor: WishlyColor.white,
+            foregroundColor: context.wishlyOnAccent,
             minimumSize: const Size.fromHeight(WishlySpace.s12),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
           ),
@@ -156,15 +156,17 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   InputDecoration _decoration(String hint, bool onDark) {
-    final border = onDark ? WishlyColor.transparent : QueroColors.line;
+    if (!onDark) return wishlyField(context, hint: hint);
+    final radius = BorderRadius.circular(WishlyRadius.lg);
     return InputDecoration(
       hintText: hint,
+      hintStyle: const TextStyle(color: WishlyColor.onInkHint, fontSize: WishlyText.base),
       filled: true,
-      fillColor: onDark ? QueroColors.inkSoft : WishlyColor.white,
+      fillColor: WishlyColor.inkSoft,
       contentPadding: const EdgeInsets.symmetric(horizontal: WishlySpace.s4, vertical: WishlySpace.s3),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: BorderSide(color: border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: BorderSide(color: border)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg), borderSide: const BorderSide(color: QueroColors.accent, width: WishlySize.ring)),
+      border: OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: WishlyColor.transparent)),
+      enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: WishlyColor.transparent)),
+      focusedBorder: OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: WishlyColor.accent, width: WishlySize.ring)),
     );
   }
 }

@@ -4,7 +4,7 @@ import 'api.dart';
 import 'models.dart';
 import 'session.dart';
 import 'theme.dart';
-import 'widgets/add_form.dart';
+import 'widgets/item_form.dart';
 
 class ShareInPage extends StatefulWidget {
   const ShareInPage({super.key, required this.url, this.title});
@@ -57,24 +57,30 @@ class _ShareInPageState extends State<ShareInPage> {
           const SizedBox(height: WishlySpace.s3),
           SelectableText(_bookmarklet, style: const TextStyle(fontSize: WishlyText.xs)),
           const SizedBox(height: WishlySpace.s4),
-          if (_error != null) Text(_error!, style: const TextStyle(color: QueroColors.danger)),
+          if (_error != null) Text(_error!, style: TextStyle(color: context.wishlyDanger)),
           if (_lists.isEmpty)
             const Text('Entre e crie uma lista para guardar este link.')
           else ...[
             DropdownButton<String>(
               value: listId,
               isExpanded: true,
-              items: [for (final list in _lists) DropdownMenuItem(value: list.id, child: Text(list.name))],
+              dropdownColor: context.wishlyCream,
+              iconEnabledColor: context.wishlyInk,
+              style: TextStyle(color: context.wishlyInk, fontSize: WishlyText.base),
+              items: [
+                for (final list in _lists)
+                  DropdownMenuItem(value: list.id, child: Text(list.name, style: TextStyle(color: context.wishlyInk))),
+              ],
               onChanged: (value) => setState(() => _listId = value),
             ),
             const SizedBox(height: WishlySpace.s4),
             if (listId != null)
-              AddPanel(
+              ItemForm(
                 api: SessionScope.of(context).api,
                 listId: listId,
                 initialName: widget.title,
                 initialUrl: widget.url,
-                onCreated: (item) {
+                onSaved: (item) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${item.name} entrou na lista.')));
                   Navigator.of(context).pushNamedAndRemoveUntil('/list/$listId', (route) => false);
                 },

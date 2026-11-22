@@ -1,0 +1,1 @@
+void applyDocumentScheme(bool dark) {}

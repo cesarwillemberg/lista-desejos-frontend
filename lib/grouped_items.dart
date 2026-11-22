@@ -119,9 +119,9 @@ class _GroupedItemsState extends State<GroupedItems> {
             _header(group),
             if (!_collapsed.contains(group.id ?? '')) ...[
               if (group.items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: WishlySpace.s4),
-                  child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: WishlySpace.s4),
+                  child: Text('Nenhum item nesta categoria', style: TextStyle(color: context.wishlyMuted)),
                 )
               else
                 _groupItems(group, wide: false),
@@ -138,7 +138,7 @@ class _GroupedItemsState extends State<GroupedItems> {
         const SizedBox(height: WishlySpace.s2),
         Expanded(
           child: RefreshIndicator(
-            color: QueroColors.ink,
+            color: context.wishlyInk,
             onRefresh: widget.onRefresh ?? () async {},
             child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -147,9 +147,9 @@ class _GroupedItemsState extends State<GroupedItems> {
                 _header(group),
                 if (!_collapsed.contains(group.id ?? '')) ...[
                   if (group.items.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: WishlySpace.s4),
-                      child: Text('Nenhum item nesta categoria', style: TextStyle(color: QueroColors.muted)),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: WishlySpace.s4),
+                      child: Text('Nenhum item nesta categoria', style: TextStyle(color: context.wishlyMuted)),
                     )
                   else
                     _groupItems(group, wide: widget.wide),
@@ -214,12 +214,12 @@ class _GroupedItemsState extends State<GroupedItems> {
               }),
               child: Row(
                 children: [
-                  Icon(closed ? Icons.expand_more : Icons.expand_less, color: QueroColors.ink, size: WishlyIcon.md),
+                  Icon(closed ? Icons.expand_more : Icons.expand_less, color: context.wishlyInk, size: WishlyIcon.md),
                   const SizedBox(width: WishlySpace.s1),
                   Expanded(child: Text(group.name, style: fraunces(WishlyText.xl2))),
                   Text(
                     '${group.items.length} ${group.items.length == 1 ? 'item' : 'itens'}',
-                    style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: context.wishlyMuted, fontWeight: FontWeight.w600),
                   ),
                   if (remaining != null) ...[
                     const SizedBox(width: WishlySpace.s3),

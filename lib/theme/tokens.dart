@@ -38,10 +38,16 @@ abstract final class WishlyDark {
   static const cream = Color(0xFF241C17);
   static const white = Color(0xFF2C241E);
   static const muted = Color(0xFFB7ADA3);
-  static const line = Color(0xFF3C312A);
+  static const line = Color(0xFF8A7D72);
   static const forest = Color(0xFF8FCBB2);
   static const note = Color(0xFF3A2A22);
   static const chip = Color(0xFF4A3024);
+  static const danger = Color(0xFFFFB4A2);
+  static const image = Color(0xFF3A312A);
+  static const placeholder = Color(0xFF322A24);
+  static const placeholderLine = Color(0xFF5C4E44);
+  static const scrim = Color(0xCC1A1410);
+  static const shadow = Color(0x80000000);
 }
 
 /// Opacities used by purchased photos, disabled controls, and focus rings.

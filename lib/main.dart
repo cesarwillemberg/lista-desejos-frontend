@@ -12,6 +12,7 @@ import 'home_page.dart';
 import 'invite_page.dart';
 import 'links.dart';
 import 'lists_page.dart';
+import 'document_scheme.dart';
 import 'session.dart';
 import 'share_in_page.dart';
 import 'shared_page.dart';
@@ -36,7 +37,7 @@ class QueroApp extends StatefulWidget {
   State<QueroApp> createState() => _QueroAppState();
 }
 
-class _QueroAppState extends State<QueroApp> {
+class _QueroAppState extends State<QueroApp> with WidgetsBindingObserver {
   late final Session _session;
   final _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<Uri>? _links;
@@ -45,13 +46,17 @@ class _QueroAppState extends State<QueroApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _session = Session(api: widget.api, tokens: widget.tokens, claims: widget.claims);
     _session.boot();
     _loadTheme();
     if (widget.listenForLinks) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _listenForLinks());
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openSharedUrl());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncScheme();
+      _openSharedUrl();
+    });
   }
 
   Future<void> _listenForLinks() async {
@@ -85,18 +90,29 @@ class _QueroAppState extends State<QueroApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _links?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() => _syncScheme();
+
+  void _syncScheme() {
+    final dark = _mode == ThemeMode.dark || (_mode == ThemeMode.system && WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+    applyDocumentScheme(dark);
   }
 
   Future<void> _loadTheme() async {
     final saved = (await SharedPreferences.getInstance()).getString('wishly_theme');
     if (!mounted) return;
     setState(() => _mode = saved == 'dark' ? ThemeMode.dark : saved == 'light' ? ThemeMode.light : ThemeMode.system);
+    _syncScheme();
   }
 
   Future<void> _setTheme(ThemeMode mode) async {
     setState(() => _mode = mode);
+    _syncScheme();
     await (await SharedPreferences.getInstance()).setString('wishly_theme', mode == ThemeMode.dark ? 'dark' : mode == ThemeMode.light ? 'light' : 'system');
   }
 

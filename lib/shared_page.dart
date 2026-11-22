@@ -68,7 +68,7 @@ class _SharedPageState extends State<SharedPage> {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () => Navigator.pop(context, controller.text.trim()),
-              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+              style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
               child: const Text('Reservar'),
             ),
           ],
@@ -145,12 +145,12 @@ class _SharedPageState extends State<SharedPage> {
                     const SizedBox(height: WishlySpace.s2),
                     Text(
                       'Falta comprar ${snapshot.totals.isEmpty ? (snapshot.purchasedTotals.isEmpty ? 'sem preços' : 'nada pendente') : formatMoney(snapshot.totals.first.amount, snapshot.totals.first.currency.isEmpty ? null : snapshot.totals.first.currency)}',
-                      style: fraunces(WishlyText.xl2, color: QueroColors.forest),
+                      style: fraunces(WishlyText.xl2, color: context.wishlyForest),
                     ),
                     if (snapshot.purchasedTotals.isNotEmpty)
                       Text(
                         'Já comprado ${formatMoney(snapshot.purchasedTotals.first.amount, snapshot.purchasedTotals.first.currency.isEmpty ? null : snapshot.purchasedTotals.first.currency)}',
-                        style: const TextStyle(color: QueroColors.muted, decoration: TextDecoration.lineThrough),
+                        style: TextStyle(color: context.wishlyMuted, decoration: TextDecoration.lineThrough),
                       ),
                   ],
                   const SizedBox(height: WishlySpace.s3),
@@ -211,6 +211,9 @@ class _SharedPageState extends State<SharedPage> {
               label: const Text('Ocultar comprados'),
               selected: _hidePurchased,
               onSelected: (value) => setState(() => _hidePurchased = value),
+              selectedColor: context.wishlyChip,
+              checkmarkColor: context.wishlyInk,
+              labelStyle: TextStyle(color: context.wishlyInk, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: WishlySpace.s2),
             Expanded(child: shown.isEmpty ? const EmptyState(title: 'Nada por aqui ainda', message: 'Esta lista ainda não tem itens.') : list),

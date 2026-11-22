@@ -17,11 +17,11 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: WishlyIcon.lg * 2, color: WishlyColor.muted),
+            Icon(icon, size: WishlyIcon.lg * 2, color: context.wishlyMuted),
             const SizedBox(height: WishlySpace.s3),
             Text(title, style: fraunces(WishlyText.xl2), textAlign: TextAlign.center),
             const SizedBox(height: WishlySpace.s2),
-            Text(message, style: const TextStyle(color: WishlyColor.muted, fontSize: WishlyText.base, height: WishlyText.body), textAlign: TextAlign.center),
+            Text(message, style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.base, height: WishlyText.body), textAlign: TextAlign.center),
           ],
         ),
       ),

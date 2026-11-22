@@ -21,7 +21,25 @@
   <meta name="description" content="Lista de desejos. Cole o link de um produto e guarde a foto e o preço.">
   <meta name="theme-color" content="#241C17">
   <style>
-    html, body { margin: 0; background: #F3EEE6; height: 100%; }
+    html, body { margin: 0; background: #F3EEE6; height: 100%; color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+      html, body, #wishly-splash { background: #1A1410; color: #F3EEE6; color-scheme: dark; }
+      #wishly-splash p { color: #B7ADA3; }
+    }
+    html[data-wishly-theme="light"], html[data-wishly-theme="light"] body { background: #F3EEE6; color: #241C17; color-scheme: light; }
+    html[data-wishly-theme="dark"], html[data-wishly-theme="dark"] body { background: #1A1410; color: #F3EEE6; color-scheme: dark; }
+    input, textarea {
+      background: transparent !important;
+      caret-color: #E25B2A;
+    }
+    html[data-wishly-theme="dark"] input, html[data-wishly-theme="dark"] textarea {
+      color: #F3EEE6 !important;
+      -webkit-text-fill-color: #F3EEE6 !important;
+    }
+    html[data-wishly-theme="light"] input, html[data-wishly-theme="light"] textarea {
+      color: #241C17 !important;
+      -webkit-text-fill-color: #241C17 !important;
+    }
     #wishly-splash {
       min-height: 100%;
       display: flex;

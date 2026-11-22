@@ -32,7 +32,7 @@ class _WishlySkeletonState extends State<WishlySkeleton> with SingleTickerProvid
   Widget build(BuildContext context) {
     final reduce = MediaQuery.disableAnimationsOf(context);
     final bar = DecoratedBox(
-      decoration: BoxDecoration(color: WishlyTokens.line, borderRadius: BorderRadius.circular(widget.radius)),
+      decoration: BoxDecoration(color: context.wishlyLine, borderRadius: BorderRadius.circular(widget.radius)),
       child: SizedBox(height: widget.height, width: widget.width),
     );
     if (reduce) return bar;

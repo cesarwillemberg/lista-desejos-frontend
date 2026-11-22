@@ -190,7 +190,7 @@ class _ListsPageState extends State<ListsPage> {
                       ),
                       FilledButton(
                         onPressed: _create,
-                        style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+                        style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
                         child: const Text('Nova lista'),
                       ),
                     ],
@@ -271,9 +271,9 @@ class _ListsPageState extends State<ListsPage> {
                   const Spacer(),
                   if (list.isOwner) ...[
                     TextButton(onPressed: () => _rename(list), child: const Text('Renomear')),
-                    TextButton(onPressed: () => _delete(list), child: const Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                    TextButton(onPressed: () => _delete(list), child: Text('Excluir', style: TextStyle(color: context.wishlyDanger))),
                   ] else
-                    Text(roleLabel(list.role), style: const TextStyle(color: QueroColors.muted, fontWeight: FontWeight.w600)),
+                    Text(roleLabel(list.role), style: TextStyle(color: context.wishlyMuted, fontWeight: FontWeight.w600)),
                 ],
               ),
             ],
@@ -296,7 +296,7 @@ Future<String?> _askName(BuildContext context, {required String title, required 
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+          style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
           child: const Text('Salvar'),
         ),
       ],

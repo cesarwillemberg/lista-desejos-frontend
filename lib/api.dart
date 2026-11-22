@@ -186,12 +186,39 @@ class QueroApi {
     return _categories(_jsonMap(response)['categories']);
   }
 
-  Future<WishItem> createItem({required String listId, String? name, required String url, String? categoryId}) async {
+  Future<WishItem> createItem({
+    required String listId,
+    String? name,
+    required String url,
+    String? categoryId,
+    String? priority,
+    String? note,
+    String? colorName,
+    String? sizeLabel,
+    String? voltage,
+    int? quantity,
+    double? price,
+    String? currency,
+    String? imageUrl,
+  }) async {
     final trimmed = name?.trim() ?? '';
+    String? filled(String? value) {
+      final text = value?.trim() ?? '';
+      return text.isEmpty ? null : text;
+    }
     final response = await _send('POST', '/api/lists/$listId/items', {
       'url': url,
-      if (trimmed.isNotEmpty) 'name': trimmed,
+      'name': ?filled(trimmed),
       'category_id': ?categoryId,
+      'priority': ?priority,
+      'note': ?filled(note),
+      'color': ?filled(colorName),
+      'size_label': ?filled(sizeLabel),
+      'voltage': ?filled(voltage),
+      'quantity': ?quantity,
+      'price': ?price,
+      'currency': ?currency,
+      'image_url': ?filled(imageUrl),
     });
     return WishItem.fromJson(_jsonMap(response));
   }

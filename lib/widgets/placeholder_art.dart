@@ -8,11 +8,11 @@ class PlaceholderArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: WishlyTokens.placeholder,
+      color: context.wishlyPlaceholder,
       child: CustomPaint(
-        painter: const _HatchPainter(),
+        painter: _HatchPainter(context.wishlyPlaceholderLine),
         child: Center(
-          child: Icon(Icons.local_mall_outlined, size: WishlySize.compact, color: QueroColors.ink.withValues(alpha: WishlyOpacity.placeholder)),
+          child: Icon(Icons.local_mall_outlined, size: WishlySize.compact, color: context.wishlyInk.withValues(alpha: WishlyOpacity.placeholder)),
         ),
       ),
     );
@@ -20,12 +20,14 @@ class PlaceholderArt extends StatelessWidget {
 }
 
 class _HatchPainter extends CustomPainter {
-  const _HatchPainter();
+  const _HatchPainter(this.color);
+
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = WishlyTokens.placeholderLine
+      ..color = color
       ..strokeWidth = WishlySize.hairline;
     for (double x = -size.height; x < size.width; x += WishlySize.hatch) {
       canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);
@@ -33,5 +35,5 @@ class _HatchPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _HatchPainter oldDelegate) => oldDelegate.color != color;
 }

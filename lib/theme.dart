@@ -16,6 +16,29 @@ extension WishlyContext on BuildContext {
   Color get wishlyForest => wishlyDark ? WishlyDark.forest : WishlyColor.forest;
   Color get wishlyNote => wishlyDark ? WishlyDark.note : WishlyColor.note;
   Color get wishlyChip => wishlyDark ? WishlyDark.chip : WishlyColor.chip;
+  Color get wishlyDanger => wishlyDark ? WishlyDark.danger : WishlyColor.danger;
+  Color get wishlyImage => wishlyDark ? WishlyDark.image : WishlyColor.white;
+  Color get wishlyPlaceholder => wishlyDark ? WishlyDark.placeholder : WishlyColor.placeholder;
+  Color get wishlyPlaceholderLine => wishlyDark ? WishlyDark.placeholderLine : WishlyColor.placeholderLine;
+  Color get wishlyScrim => wishlyDark ? WishlyDark.scrim : WishlyColor.scrim;
+  Color get wishlyOnAccent => wishlyDark ? WishlyColor.ink : WishlyColor.white;
+  Color get wishlyOnForest => wishlyDark ? WishlyColor.ink : WishlyColor.white;
+}
+
+InputDecoration wishlyField(BuildContext context, {String? hint, bool dense = false}) {
+  final radius = BorderRadius.circular(WishlyRadius.lg);
+  final side = BorderSide(color: context.wishlyLine);
+  return InputDecoration(
+    hintText: hint,
+    isDense: dense,
+    hintStyle: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.base),
+    filled: true,
+    fillColor: context.wishlyWhite,
+    contentPadding: const EdgeInsets.symmetric(horizontal: WishlySpace.s4, vertical: WishlySpace.s3),
+    border: OutlineInputBorder(borderRadius: radius, borderSide: side),
+    enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: side),
+    focusedBorder: OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: WishlyColor.accent, width: WishlySize.ring)),
+  );
 }
 
 TextStyle fraunces(
@@ -61,23 +84,35 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
   const accent = WishlyColor.accent;
   final forest = dark ? WishlyDark.forest : WishlyColor.forest;
   final line = dark ? WishlyDark.line : WishlyColor.line;
+  final muted = dark ? WishlyDark.muted : WishlyColor.muted;
+  final danger = dark ? WishlyDark.danger : WishlyColor.danger;
+  final chip = dark ? WishlyDark.chip : WishlyColor.chip;
   final radius = BorderRadius.circular(WishlyRadius.lg);
   final base = ThemeData(
     useMaterial3: true,
     brightness: brightness,
     scaffoldBackgroundColor: paper,
+    canvasColor: cream,
     fontFamily: 'Outfit',
     visualDensity: VisualDensity.standard,
     colorScheme: ColorScheme(
       brightness: brightness,
       primary: accent,
-      onPrimary: WishlyColor.white,
+      onPrimary: dark ? WishlyColor.ink : WishlyColor.white,
       secondary: forest,
-      onSecondary: WishlyColor.white,
-      error: WishlyColor.danger,
-      onError: WishlyColor.white,
+      onSecondary: dark ? WishlyColor.ink : WishlyColor.white,
+      error: danger,
+      onError: dark ? WishlyColor.ink : WishlyColor.white,
       surface: cream,
       onSurface: ink,
+      onSurfaceVariant: muted,
+      outline: line,
+      outlineVariant: line,
+      surfaceContainerHighest: surfaceText,
+      surfaceContainerHigh: cream,
+      surfaceContainer: cream,
+      secondaryContainer: chip,
+      onSecondaryContainer: ink,
     ),
   );
   return base.copyWith(
@@ -85,6 +120,14 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
     splashFactory: InkSparkle.splashFactory,
     focusColor: accent.withValues(alpha: WishlyOpacity.focus),
     hoverColor: accent.withValues(alpha: WishlyOpacity.hover),
+    iconTheme: IconThemeData(color: ink, size: WishlyIcon.lg),
+    dividerTheme: DividerThemeData(color: line, thickness: WishlySize.hairline),
+    snackBarTheme: SnackBarThemeData(backgroundColor: cream, contentTextStyle: TextStyle(color: ink, fontSize: WishlyText.base), actionTextColor: accent),
+    popupMenuTheme: PopupMenuThemeData(color: cream, textStyle: TextStyle(color: ink, fontSize: WishlyText.base)),
+    bottomSheetTheme: BottomSheetThemeData(backgroundColor: cream, surfaceTintColor: WishlyColor.transparent),
+    appBarTheme: AppBarTheme(backgroundColor: paper, foregroundColor: ink, surfaceTintColor: WishlyColor.transparent, elevation: WishlyElevation.none),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: forest, linearTrackColor: line),
+    textSelectionTheme: TextSelectionThemeData(cursorColor: accent, selectionColor: accent.withValues(alpha: WishlyOpacity.focus)),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
         minimumSize: const Size(WishlySize.tap, WishlySize.tap),
@@ -95,7 +138,7 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: accent,
-        foregroundColor: surfaceText,
+        foregroundColor: dark ? WishlyColor.ink : WishlyColor.white,
         minimumSize: const Size(WishlySize.tap, WishlySize.tap),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: WishlyText.base),
@@ -122,6 +165,7 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
       border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: line)),
       enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: line)),
       focusedBorder: OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: accent, width: WishlySize.stroke)),
+      hintStyle: TextStyle(color: muted, fontSize: WishlyText.base),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {

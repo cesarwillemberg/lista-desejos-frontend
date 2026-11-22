@@ -12,8 +12,7 @@ import 'theme.dart';
 import 'grouped_items.dart';
 import 'list_sidebar.dart';
 import 'members_dialog.dart';
-import 'widgets/add_form.dart';
-import 'widgets/edit_dialog.dart';
+import 'widgets/item_form.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/item_card.dart';
 import 'widgets/skeleton.dart';
@@ -272,15 +271,14 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   }
 
   Future<void> _edit(WishItem item) async {
-    final updated = await showEditDialog(
+    final updated = await showItemEditor(
       context,
       api: SessionScope.of(context).api,
+      listId: widget.listId,
       item: item,
       categories: _categories,
-      onCreateCategory: (name) async {
-        final created = await SessionScope.of(context).api.createCategory(widget.listId, name);
+      onCategoryCreated: (created) {
         if (mounted) setState(() => _categories = [..._categories, created]);
-        return created;
       },
     );
     if (updated != null) {
@@ -431,7 +429,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
               setState(() => _list = updated);
               Navigator.pop(context);
             },
-            child: const Text('Revogar', style: TextStyle(color: QueroColors.danger)),
+            child: Text('Revogar', style: TextStyle(color: context.wishlyDanger)),
           ),
         ],
       ),
@@ -460,8 +458,8 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           categories: _categories,
           api: api,
           canEdit: canEdit,
-          onAdd: canEdit ? () => _openAdd(api, wide: wide) : null,
-          onAddInCategory: canEdit ? (categoryId) => _openAdd(api, wide: wide, categoryId: categoryId) : null,
+          onAdd: canEdit ? () => _openAdd(api) : null,
+          onAddInCategory: canEdit ? (categoryId) => _openAdd(api, categoryId: categoryId) : null,
           onCategories: canEdit ? _manageCategories : null,
           onMembers: _list == null ? null : _openMembers,
           onMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
@@ -510,9 +508,9 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
             drawer: Drawer(backgroundColor: QueroColors.ink, child: sidebar),
             floatingActionButton: canEdit
                 ? FloatingActionButton.extended(
-                    onPressed: () => _openAdd(api, wide: false),
-                    backgroundColor: QueroColors.accent,
-                    foregroundColor: WishlyColor.white,
+                    onPressed: () => _openAdd(api),
+                    backgroundColor: WishlyColor.accent,
+                    foregroundColor: context.wishlyOnAccent,
                     icon: const Icon(Icons.add),
                     label: const Text('Adicionar item'),
                   )
@@ -557,7 +555,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () => Navigator.pop(context, controller.text.trim()),
-              style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+              style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
               child: const Text('Reservar'),
             ),
           ],
@@ -658,43 +656,20 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
     }
   }
 
-  Future<void> _openAdd(QueroApi api, {required bool wide, String? categoryId}) async {
+  Future<void> _openAdd(QueroApi api, {String? categoryId}) async {
     final list = _list;
     if (list == null) return;
-    final panel = AddPanel(
+    final created = await showItemEditor(
+      context,
       api: api,
       listId: list.id,
       categories: _categories,
       initialCategoryId: categoryId,
-      onCategoryCreated: (category) => setState(() => _categories = [..._categories, category]),
-      onCreated: (item) {
-        Navigator.pop(context);
-        _insert(item);
+      onCategoryCreated: (category) {
+        if (mounted) setState(() => _categories = [..._categories, category]);
       },
     );
-    if (!wide) {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: context.wishlyPaper,
-        builder: (context) => Padding(
-          padding: EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s4, WishlySpace.s5, WishlySpace.s5 + MediaQuery.viewInsetsOf(context).bottom),
-          child: panel,
-        ),
-      );
-      return;
-    }
-    await showDialog<void>(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: context.wishlyPaper,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: WishlySize.sheet),
-          child: Padding(padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s5, WishlySpace.s6, WishlySpace.s6), child: panel),
-        ),
-      ),
-    );
+    if (created != null) _insert(created);
   }
 }
 
@@ -710,7 +685,7 @@ Future<String?> _askListName(BuildContext context, {String title = 'Nova lista',
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+          style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
           child: Text(confirm),
         ),
       ],
@@ -819,7 +794,7 @@ class _Board extends StatelessWidget {
                     onPressed: onAdd,
                     icon: const Icon(Icons.add),
                     label: const Text('Adicionar item'),
-                    style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+                    style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
                   ),
                 if (onMembers != null) IconButton(onPressed: onMembers, tooltip: 'Membros', icon: const Icon(Icons.group_outlined)),
                 if (onCategories != null) IconButton(onPressed: onCategories, tooltip: 'Categorias', icon: const Icon(Icons.category_outlined)),
@@ -848,7 +823,7 @@ class _Board extends StatelessWidget {
           SliverAppBar(
             pinned: true,
             backgroundColor: context.wishlyPaper,
-            surfaceTintColor: QueroColors.paper,
+            surfaceTintColor: context.wishlyPaper,
             foregroundColor: context.wishlyInk,
             elevation: WishlyElevation.none,
             scrolledUnderElevation: WishlyElevation.none,
@@ -882,7 +857,7 @@ class _Board extends StatelessWidget {
                   if (onCategories != null) const PopupMenuItem(value: 'categories', child: Text('Categorias')),
                   if (onRenameList != null) const PopupMenuItem(value: 'rename', child: Text('Renomear lista')),
                   if (onDeleteList != null)
-                    const PopupMenuItem(value: 'delete', child: Text('Excluir lista', style: TextStyle(color: QueroColors.danger))),
+                    PopupMenuItem(value: 'delete', child: Text('Excluir lista', style: TextStyle(color: context.wishlyDanger))),
                   const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
                 ],
               ),
@@ -984,7 +959,7 @@ class _Board extends StatelessWidget {
       );
     }
     if (items.isEmpty && categories.isEmpty) {
-      return _pull(ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')]));
+      return _pull(context, ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.')]));
     }
     final shown = hidePurchased ? items.where((item) => !item.purchased).toList() : items;
     if (categories.isEmpty) {
@@ -1006,7 +981,7 @@ class _Board extends StatelessWidget {
                       separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
                       itemBuilder: (context, index) => _card(shown[index]),
                     );
-      return _pull(Column(children: [_hideChip(context), Expanded(child: body)]));
+      return _pull(context, Column(children: [_hideChip(context), Expanded(child: body)]));
     }
     return GroupedItems(
       categories: categories,
@@ -1036,8 +1011,8 @@ class _Board extends StatelessWidget {
     );
   }
 
-  Widget _pull(Widget child) {
-    return RefreshIndicator(color: QueroColors.ink, onRefresh: onReload, child: child);
+  Widget _pull(BuildContext context, Widget child) {
+    return RefreshIndicator(color: context.wishlyInk, onRefresh: onReload, child: child);
   }
 
   Widget _card(WishItem item) {
@@ -1173,18 +1148,20 @@ class _CategoryManagerState extends State<_CategoryManager> {
                   IconButton(onPressed: i == 0 ? null : () => _move(i, -1), icon: const Icon(Icons.arrow_upward), tooltip: 'Subir'),
                   IconButton(onPressed: i == _categories.length - 1 ? null : () => _move(i, 1), icon: const Icon(Icons.arrow_downward), tooltip: 'Descer'),
                   TextButton(onPressed: () => _rename(_categories[i]), child: const Text('Renomear')),
-                  TextButton(onPressed: () => _delete(_categories[i]), child: const Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                  TextButton(onPressed: () => _delete(_categories[i]), child: Text('Excluir', style: TextStyle(color: context.wishlyDanger))),
                 ],
               ),
             const SizedBox(height: WishlySpace.s2),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(hintText: 'Nova categoria'),
+              style: TextStyle(color: context.wishlyInk),
+              cursorColor: WishlyColor.accent,
+              decoration: wishlyField(context, hint: 'Nova categoria'),
               textInputAction: TextInputAction.done,
               onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _add(),
             ),
-            if (_error != null) Padding(padding: const EdgeInsets.only(top: WishlySpace.s2), child: Text(_error!, style: const TextStyle(color: QueroColors.danger))),
+            if (_error != null) Padding(padding: const EdgeInsets.only(top: WishlySpace.s2), child: Text(_error!, style: TextStyle(color: context.wishlyDanger))),
           ],
         ),
       ),
@@ -1192,7 +1169,12 @@ class _CategoryManagerState extends State<_CategoryManager> {
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar')),
         FilledButton(
           onPressed: _name.text.trim().isEmpty ? null : _add,
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+          style: FilledButton.styleFrom(
+            backgroundColor: WishlyColor.accent,
+            foregroundColor: context.wishlyOnAccent,
+            disabledBackgroundColor: context.wishlyLine,
+            disabledForegroundColor: context.wishlyInk,
+          ),
           child: const Text('Adicionar'),
         ),
       ],
@@ -1212,7 +1194,7 @@ Future<String?> _askCategoryName(BuildContext context) async {
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
-          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+          style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
           child: const Text('Salvar'),
         ),
       ],
@@ -1272,8 +1254,8 @@ class _TotalBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = onDark ? WishlyTokens.onInkMuted : QueroColors.muted;
-    final value = onDark ? QueroColors.cream : QueroColors.forest;
+    final label = onDark ? WishlyColor.onInkMuted : context.wishlyMuted;
+    final value = onDark ? WishlyColor.cream : context.wishlyForest;
     final totals = snapshot.totals;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1292,8 +1274,8 @@ class _TotalBlock extends StatelessWidget {
           LinearProgressIndicator(
             value: ((snapshot.purchasedTotals.isEmpty ? 0 : snapshot.purchasedTotals.first.amount) / budget!).clamp(0, 1).toDouble(),
             minHeight: WishlySpace.s2,
-            color: QueroColors.forest,
-            backgroundColor: QueroColors.line,
+            color: onDark ? WishlyColor.cream : context.wishlyForest,
+            backgroundColor: onDark ? WishlyColor.inkLine : context.wishlyLine,
             borderRadius: BorderRadius.circular(WishlyRadius.full),
           ),
           Text('Comprado de ${formatMoney(budget!, budgetCurrency)}', style: TextStyle(color: label, fontSize: WishlyText.xs)),
@@ -1353,13 +1335,17 @@ class _FindSortState extends State<_FindSort> {
               Expanded(
                 child: TextField(
                   controller: _query,
-                  decoration: const InputDecoration(hintText: 'Buscar nome, loja ou nota', isDense: true),
+                  style: TextStyle(color: context.wishlyInk),
+                  cursorColor: WishlyColor.accent,
+                  decoration: wishlyField(context, hint: 'Buscar nome, loja ou nota', dense: true),
                   onChanged: widget.onQuery,
                 ),
               ),
               const SizedBox(width: WishlySpace.s2),
               DropdownButton<String>(
                 value: widget.sort,
+                dropdownColor: context.wishlyCream,
+                style: TextStyle(color: context.wishlyInk, fontSize: WishlyText.base),
                 items: const [
                   DropdownMenuItem(value: 'manual', child: Text('Manual')),
                   DropdownMenuItem(value: 'price_asc', child: Text('Preço ↑')),

@@ -23,10 +23,10 @@ class MemberAvatars extends StatelessWidget {
               widthFactor: WishlySize.avatarOverlap,
               child: CircleAvatar(
                 radius: WishlySize.avatarRadius,
-                backgroundColor: index.isEven ? (onDark ? WishlyTokens.inkAvatar : QueroColors.ink) : QueroColors.accent,
+                backgroundColor: index.isEven ? (onDark ? WishlyTokens.inkAvatar : WishlyColor.ink) : WishlyColor.accent,
                 child: Text(
                   shown[index].initials,
-                  style: const TextStyle(color: WishlyColor.white, fontSize: WishlyText.xs, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: index.isEven ? WishlyColor.white : WishlyColor.ink, fontSize: WishlyText.xs, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

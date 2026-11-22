@@ -76,7 +76,7 @@ class _MembersDialogState extends State<MembersDialog> {
                   IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                 ],
               ),
-              Text('Colaborar em ${_list.name}', style: const TextStyle(color: QueroColors.muted)),
+              Text('Colaborar em ${_list.name}', style: TextStyle(color: context.wishlyMuted)),
               const SizedBox(height: WishlySpace.s3),
               MemberAvatars(members: _list.members),
               const SizedBox(height: WishlySpace.s2),
@@ -113,14 +113,14 @@ class _MembersDialogState extends State<MembersDialog> {
                         alignment: Alignment.centerRight,
                         child: FilledButton(
                           onPressed: _busy ? null : _addEmail,
-                          style: FilledButton.styleFrom(backgroundColor: QueroColors.accent, foregroundColor: WishlyColor.white),
+                          style: FilledButton.styleFrom(backgroundColor: WishlyColor.accent, foregroundColor: context.wishlyOnAccent),
                           child: const Text('Adicionar'),
                         ),
                       ),
                     ],
                     if (_error != null) ...[
                       const SizedBox(height: WishlySpace.s2),
-                      Text(_error!, style: const TextStyle(color: QueroColors.danger)),
+                      Text(_error!, style: TextStyle(color: context.wishlyDanger)),
                     ],
                   ],
                 ),
@@ -148,7 +148,7 @@ class _MembersDialogState extends State<MembersDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(member.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(roleLabel(member.role), style: const TextStyle(color: QueroColors.muted, fontSize: WishlyText.xs)),
+                Text(roleLabel(member.role), style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs)),
               ],
             ),
           ),
@@ -162,7 +162,7 @@ class _MembersDialogState extends State<MembersDialog> {
               ],
             )
           else if (mine && !_list.isOwner)
-            TextButton(onPressed: _busy ? null : _leave, child: const Text('Sair', style: TextStyle(color: QueroColors.danger))),
+            TextButton(onPressed: _busy ? null : _leave, child: Text('Sair', style: TextStyle(color: context.wishlyDanger))),
         ],
       ),
     );
@@ -170,7 +170,7 @@ class _MembersDialogState extends State<MembersDialog> {
 
   Widget _inviteBlock(String role, String title, String? url) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: QueroColors.cream, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
+      decoration: BoxDecoration(color: context.wishlyWhite, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
       child: Padding(
         padding: const EdgeInsets.all(WishlySpace.s3),
         child: Column(
@@ -178,7 +178,7 @@ class _MembersDialogState extends State<MembersDialog> {
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: WishlySpace.s1),
-            Text(url ?? 'Link desativado', style: const TextStyle(color: QueroColors.muted, fontSize: WishlyText.sm)),
+            Text(url ?? 'Link desativado', style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.sm)),
             Wrap(
               spacing: WishlySpace.s1,
               children: [

@@ -61,7 +61,10 @@ class ItemCard extends StatelessWidget {
       image = Opacity(opacity: WishlyOpacity.purchased, child: ColorFiltered(colorFilter: _grey, child: image));
     }
     return DecoratedBox(
-      decoration: const BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(WishlyCard.radius)), boxShadow: WishlyShadow.sm),
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(WishlyCard.radius)),
+        boxShadow: [BoxShadow(color: context.wishlyDark ? WishlyDark.shadow : WishlyColor.shadow, blurRadius: 6, offset: const Offset(0, 2))],
+      ),
       child: Material(
       color: context.wishlyCream,
       borderRadius: BorderRadius.circular(WishlyCard.radius),
@@ -70,24 +73,33 @@ class ItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          AspectRatio(
-            aspectRatio: WishlyCard.imageAspect,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _StoreLink(url: item.url, child: image),
-                if (item.purchased)
-                  const Positioned(
-                    left: WishlySpace.s3,
-                    top: WishlySpace.s3,
-                    child: _BoughtBadge(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(WishlySpace.s3, WishlySpace.s3, WishlySpace.s3, WishlySpace.s0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(WishlyRadius.xl),
+              child: AspectRatio(
+                aspectRatio: WishlyCard.imageAspect,
+                child: ColoredBox(
+                  color: context.wishlyImage,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _StoreLink(url: item.url, child: image),
+                      if (item.purchased)
+                        const Positioned(
+                          left: WishlySpace.s3,
+                          top: WishlySpace.s3,
+                          child: _BoughtBadge(),
+                        ),
+                      if (busy || waiting)
+                        ColoredBox(
+                          color: context.wishlyScrim,
+                          child: Center(child: CircularProgressIndicator(strokeWidth: WishlySize.strokeBold, color: context.wishlyInk)),
+                        ),
+                    ],
                   ),
-                if (busy || waiting)
-                  const ColoredBox(
-                    color: WishlyTokens.scrim,
-                    child: Center(child: CircularProgressIndicator(strokeWidth: WishlySize.strokeBold, color: QueroColors.ink)),
-                  ),
-              ],
+                ),
+              ),
             ),
           ),
           details,
@@ -119,14 +131,14 @@ String _priorityLabel(String priority) {
   }
 }
 
-Color _priorityColor(String priority) {
+Color _priorityColor(BuildContext context, String priority) {
   switch (priority) {
     case 'muito':
-      return QueroColors.accent;
+      return WishlyColor.accent;
     case 'talvez':
-      return QueroColors.muted;
+      return context.wishlyMuted;
     default:
-      return QueroColors.forest;
+      return context.wishlyForest;
   }
 }
 
@@ -148,10 +160,10 @@ class _HistoryDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: WishlySpace.s16, width: double.infinity, child: CustomPaint(painter: _SparkPainter(points))),
+            SizedBox(height: WishlySpace.s16, width: double.infinity, child: CustomPaint(painter: _SparkPainter(points, context.wishlyForest))),
             const SizedBox(height: WishlySpace.s3),
-            if (low != null) Text('Menor ${formatMoney(low, item.currency)}', style: const TextStyle(color: QueroColors.forest, fontWeight: FontWeight.w700)),
-            if (high != null) Text('Maior ${formatMoney(high, item.currency)}', style: const TextStyle(color: QueroColors.muted)),
+            if (low != null) Text('Menor ${formatMoney(low, item.currency)}', style: TextStyle(color: context.wishlyForest, fontWeight: FontWeight.w700)),
+            if (high != null) Text('Maior ${formatMoney(high, item.currency)}', style: TextStyle(color: context.wishlyMuted)),
           ],
         ),
       ),
@@ -161,8 +173,9 @@ class _HistoryDialog extends StatelessWidget {
 }
 
 class _SparkPainter extends CustomPainter {
-  const _SparkPainter(this.points);
+  const _SparkPainter(this.points, this.color);
   final List<double> points;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -180,11 +193,11 @@ class _SparkPainter extends CustomPainter {
         path.lineTo(x, y);
       }
     }
-    canvas.drawPath(path, Paint()..color = QueroColors.forest..style = PaintingStyle.stroke..strokeWidth = WishlySize.stroke..strokeCap = StrokeCap.round);
+    canvas.drawPath(path, Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = WishlySize.stroke..strokeCap = StrokeCap.round);
   }
 
   @override
-  bool shouldRepaint(covariant _SparkPainter oldDelegate) => oldDelegate.points != points;
+  bool shouldRepaint(covariant _SparkPainter oldDelegate) => oldDelegate.points != points || oldDelegate.color != color;
 }
 
 class _BoughtBadge extends StatelessWidget {
@@ -193,10 +206,10 @@ class _BoughtBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: QueroColors.ink, borderRadius: BorderRadius.circular(WishlyRadius.full)),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s1),
-        child: Text('Comprado', style: TextStyle(color: WishlyColor.white, fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(color: context.wishlyInk, borderRadius: BorderRadius.circular(WishlyRadius.full)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s1),
+        child: Text('Comprado', style: TextStyle(color: context.wishlyPaper, fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -229,7 +242,7 @@ class _CardDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final price = item.status == 'pending' && item.price == null ? 'Lendo o preço…' : (item.price == null ? 'Preço indisponível' : formatMoney(item.price!, item.currency));
     final priceStyle = item.price == null
-        ? const TextStyle(color: QueroColors.muted, fontSize: WishlyText.base, fontWeight: FontWeight.w500)
+        ? TextStyle(color: context.wishlyMuted, fontSize: WishlyText.base, fontWeight: FontWeight.w500)
         : fraunces(WishlyText.xl2, color: item.purchased ? context.wishlyMuted : context.wishlyForest);
     return Padding(
       padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s4, WishlySpace.s4, WishlySpace.s2),
@@ -266,13 +279,13 @@ class _CardDetails extends StatelessWidget {
               'adicionado por ${item.addedByLabel}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: QueroColors.muted, fontSize: WishlyText.xs),
+              style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs),
             ),
           ],
           const SizedBox(height: WishlySpace.s3),
           Text(
             price,
-            style: item.purchased ? priceStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: QueroColors.muted) : priceStyle,
+            style: item.purchased ? priceStyle.copyWith(decoration: TextDecoration.lineThrough, decorationColor: context.wishlyMuted) : priceStyle,
           ),
           const SizedBox(height: WishlySpace.s2),
           Wrap(
@@ -281,16 +294,16 @@ class _CardDetails extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               DecoratedBox(
-                decoration: BoxDecoration(color: _priorityColor(item.priority).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(WishlyRadius.full)),
+                decoration: BoxDecoration(color: _priorityColor(context, item.priority).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(WishlyRadius.full)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s1),
-                  child: Text(_priorityLabel(item.priority), style: TextStyle(color: _priorityColor(item.priority), fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
+                  child: Text(_priorityLabel(item.priority), style: TextStyle(color: _priorityColor(context, item.priority), fontSize: WishlyText.xs, fontWeight: FontWeight.w700)),
                 ),
               ),
               if (item.priceDrop != null)
                 InkWell(
                   onTap: () => showDialog<void>(context: context, builder: (context) => _HistoryDialog(item: item)),
-                  child: Text('↓ ${formatMoney(item.priceDrop!, item.currency)}', style: const TextStyle(color: QueroColors.forest, fontSize: WishlyText.sm, fontWeight: FontWeight.w700)),
+                  child: Text('↓ ${formatMoney(item.priceDrop!, item.currency)}', style: TextStyle(color: context.wishlyForest, fontSize: WishlyText.sm, fontWeight: FontWeight.w700)),
                 ),
             ],
           ),
@@ -325,7 +338,7 @@ class _CardDetails extends StatelessWidget {
               item.reservedByMe
                   ? 'Você marcou este item'
                   : (item.reservedLabel == null ? 'Reservado' : 'Reservado por ${item.reservedLabel}'),
-              style: const TextStyle(color: QueroColors.forest, fontWeight: FontWeight.w600, fontSize: WishlyText.sm),
+              style: TextStyle(color: context.wishlyForest, fontWeight: FontWeight.w600, fontSize: WishlyText.sm),
             ),
           ],
           const SizedBox(height: WishlySpace.s2),
@@ -349,7 +362,7 @@ class _CardDetails extends StatelessWidget {
                     const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
                     const PopupMenuItem(value: 'edit', child: Text('Editar')),
                     if (item.reserved && onUnreserve != null) const PopupMenuItem(value: 'release', child: Text('Liberar')),
-                    const PopupMenuItem(value: 'delete', child: Text('Excluir', style: TextStyle(color: QueroColors.danger))),
+                    PopupMenuItem(value: 'delete', child: Text('Excluir', style: TextStyle(color: context.wishlyDanger))),
                   ],
                 )
               else ...[
@@ -409,25 +422,27 @@ class _BuyToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = purchased ? QueroColors.forest : QueroColors.ink;
+    final ink = context.wishlyInk;
+    final forest = context.wishlyForest;
+    final onFilled = context.wishlyOnForest;
     return Tooltip(
       message: purchased ? 'Desmarcar comprado' : 'Marcar como comprado',
       child: Material(
-        color: purchased ? QueroColors.forest : WishlyColor.transparent,
-        shape: StadiumBorder(side: BorderSide(color: purchased ? QueroColors.forest : QueroColors.line)),
+        color: purchased ? forest : WishlyColor.transparent,
+        shape: StadiumBorder(side: BorderSide(color: purchased ? forest : context.wishlyLine)),
         child: InkWell(
           onTap: onPressed,
           customBorder: const StadiumBorder(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s1),
+            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(purchased ? Icons.check_circle : Icons.check_circle_outline, size: WishlyIcon.sm, color: purchased ? WishlyColor.white : color),
+                Icon(purchased ? Icons.check_circle : Icons.check_circle_outline, size: WishlyIcon.sm, color: purchased ? onFilled : ink),
                 const SizedBox(width: WishlySpace.s1),
                 Text(
                   purchased ? 'Comprado' : 'Comprar',
-                  style: TextStyle(fontSize: WishlyText.xs, fontWeight: FontWeight.w700, color: purchased ? WishlyColor.white : color),
+                  style: TextStyle(fontSize: WishlyText.sm, fontWeight: FontWeight.w700, color: purchased ? onFilled : ink),
                 ),
               ],
             ),
@@ -473,15 +488,19 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = context.wishlyInk;
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: QueroColors.ink,
-        padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s2),
-        minimumSize: const Size(WishlySpace.s0, WishlySize.compact),
+        foregroundColor: ink,
+        backgroundColor: WishlyColor.transparent,
+        side: BorderSide(color: context.wishlyLine),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s2),
+        minimumSize: const Size(WishlySpace.s0, WishlySize.tap),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      child: Text(label, style: const TextStyle(fontSize: WishlyText.sm, fontWeight: FontWeight.w600)),
+      child: Text(label, style: TextStyle(fontSize: WishlyText.sm, fontWeight: FontWeight.w700, color: ink)),
     );
   }
 }
@@ -496,11 +515,9 @@ class _ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.imageUrl == null || item.imageUrl!.isEmpty) return const PlaceholderArt();
-    return ColoredBox(
-      color: WishlyColor.white,
-      child: Padding(
-        padding: const EdgeInsets.all(WishlySpace.s3),
-        child: Image.network(
+    return Padding(
+      padding: const EdgeInsets.all(WishlySpace.s3),
+      child: Image.network(
           proxyUrl,
           headers: headers,
           fit: BoxFit.contain,
@@ -514,7 +531,6 @@ class _ProductImage extends StatelessWidget {
             );
           },
         ),
-      ),
     );
   }
 }
