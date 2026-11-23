@@ -31,7 +31,7 @@ void main() {
   test('lê código de link curto e do esquema do app', () {
     expect(shareCodeFromUri(Uri.parse('https://lista-desejos-backend.onrender.com/s/Ab12cd')), 'Ab12cd');
     expect(shareCodeFromUri(Uri.parse('wishly://s/Ab12cd')), 'Ab12cd');
-    expect(shareCodeFromUri(Uri.parse('https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cd')), null);
+    expect(shareCodeFromUri(Uri.parse('https://cesarwillemberg.github.io/wishly-mobile/#/l/Ab12cd')), null);
     expect(inviteCodeFromUri(Uri.parse('https://lista-desejos-backend.onrender.com/c/Ab12cd')), 'Ab12cd');
     expect(inviteCodeFromUri(Uri.parse('wishly://c/Ab12cd')), 'Ab12cd');
   });

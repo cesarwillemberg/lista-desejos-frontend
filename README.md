@@ -2,7 +2,7 @@
 
 Lista de desejos em Flutter. A interface está em português do Brasil e funciona no navegador (layout largo e estreito). Os projetos Android e iOS já estão neste repositório, para `flutter build apk` e `flutter build ios`.
 
-A foto e o preço não são buscados no navegador — isso esbarraria em CORS. O app fala com a [API](https://github.com/cesarwillemberg/lista-desejos-backend).
+A foto e o preço não são buscados no navegador — isso esbarraria em CORS. O app fala com a [API](https://github.com/cesarwillemberg/wishly-core-api).
 
 ## Run locally
 
@@ -34,7 +34,7 @@ flutter build ios --dart-define=API_BASE=https://seu-servidor.example
 
 To serve the web build from the API, point `QUERO_WEB_DIR` at `build/web` and leave `API_BASE` unset for that build.
 
-The web app uses hash routes so a refresh on GitHub Pages still opens the page. The share button copies a short link such as `https://lista-desejos-backend.onrender.com/s/Ab12cde`, which opens `https://cesarwillemberg.github.io/lista-desejos-frontend/#/l/Ab12cde`. Older long tokens still open. On a phone, **Enviar** uses the system share sheet when the browser allows it.
+The web app uses hash routes so a refresh on GitHub Pages still opens the page. The share button copies a short link such as `https://lista-desejos-backend.onrender.com/s/Ab12cde`, which opens `https://cesarwillemberg.github.io/wishly-mobile/#/l/Ab12cde`. Older long tokens still open. On a phone, **Enviar** uses the system share sheet when the browser allows it.
 
 Android App Links and iOS Universal Links use `https://lista-desejos-backend.onrender.com/s/…`. The custom scheme `wishly://s/{code}` is the fallback. The Android package is `com.wishly.app`. Set `ANDROID_SHA256_FINGERPRINTS` and `IOS_APP_ID` on the API before the store builds can claim those links.
 
@@ -60,12 +60,12 @@ If the store blocks the read, the item is still saved, the photo is a placeholde
 
 `.github/workflows/pages.yml` builds Flutter web with WebAssembly and deploys it. Browsers that cannot run it load the CanvasKit JavaScript build automatically. `web/index.html` shows the Wishly wordmark while that download finishes. `web/sw.js` caches the shell so a repeat visit does not wait out GitHub Pages' `max-age=600`.
 
-- Base path: `--base-href /lista-desejos-frontend/`
+- Base path: `--base-href /wishly-mobile/`
 - API origin: `--dart-define=API_BASE=...` from the repository variable `API_BASE`, or the secret `API_BASE` if the variable is empty
 - `web/manifest.json` is a standalone PWA (`start_url` and `scope` `./`, maskable icons) so a phone can use **Add to Home Screen** / **Adicionar à tela inicial**
 
 The public URL, once Pages is enabled, is:
 
-`https://cesarwillemberg.github.io/lista-desejos-frontend/`
+`https://cesarwillemberg.github.io/wishly-mobile/`
 
 Outfit and Fraunces are under the SIL Open Font License. See `assets/fonts/OFL-Outfit.txt` and `assets/fonts/OFL-Fraunces.txt`.

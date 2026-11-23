@@ -48,7 +48,7 @@ jobs:
         run: |
           BUILD_ID="${GITHUB_SHA}"
           flutter build web --release --wasm --pwa-strategy=none \
-            --base-href /lista-desejos-frontend/ \
+            --base-href /wishly-mobile/ \
             --dart-define=API_BASE="${API_BASE}" \
             --dart-define=WISHLY_BUILD="${BUILD_ID}"
           python3 -c 'import json,os,pathlib; pathlib.Path("build/web/version.json").write_text(json.dumps({"build": os.environ["BUILD_ID"]}) + "\n")'

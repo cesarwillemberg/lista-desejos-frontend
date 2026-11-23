@@ -93,4 +93,4 @@ class _ShareInPageState extends State<ShareInPage> {
 }
 
 const _bookmarklet =
-    "javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);location.href='https://cesarwillemberg.github.io/lista-desejos-frontend/#/compartilhar?url='+u+'&title='+t;})();";
+    "javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);location.href='https://cesarwillemberg.github.io/wishly-mobile/#/compartilhar?url='+u+'&title='+t;})();";
