@@ -3,7 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models.dart';
 import 'money.dart';
+import 'session.dart';
 import 'theme.dart';
+import 'widgets/avatar.dart';
 import 'widgets/member_avatars.dart';
 
 const _widthKey = 'quero_sidebar_width';
@@ -144,6 +146,7 @@ class _ListSidebarState extends State<ListSidebar> {
           ),
         ),
         IconButton(onPressed: widget.onCreate, tooltip: 'Nova lista', color: QueroColors.cream, icon: const Icon(Icons.add)),
+        _accountButton(compact: true),
       ],
     );
   }
@@ -232,7 +235,46 @@ class _ListSidebarState extends State<ListSidebar> {
               padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
               child: Text('Já comprado $bought', style: const TextStyle(color: WishlyTokens.onInkMuted, decoration: TextDecoration.lineThrough)),
           ),
+          _accountButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _accountButton({bool compact = false}) {
+    final session = SessionScope.of(context);
+    final user = session.user;
+    if (user == null) return const SizedBox.shrink();
+    final avatar = WishlyAvatar(
+      label: user.name,
+      userId: user.id,
+      hasAvatar: user.hasAvatar,
+      version: user.avatarAt,
+      api: session.api,
+      radius: compact ? 16 : 18,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: WishlySpace.s3),
+      child: InkWell(
+        onTap: () => Navigator.of(context).pushNamed('/configuracoes'),
+        borderRadius: BorderRadius.circular(WishlyRadius.lg),
+        child: compact
+            ? avatar
+            : Row(
+                children: [
+                  avatar,
+                  const SizedBox(width: WishlySpace.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(user.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: QueroColors.cream, fontWeight: FontWeight.w700)),
+                        const Text('Configurações', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

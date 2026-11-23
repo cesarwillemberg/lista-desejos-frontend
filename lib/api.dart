@@ -71,7 +71,50 @@ class QueroApi {
   }
 
   Future<UserAccount> me() async {
-    final response = await _send('GET', '/api/auth/me');
+    final response = await _send('GET', '/api/me');
+    return UserAccount.fromJson(_jsonMap(response));
+  }
+
+  String avatarUrl(String userId, {String? version}) {
+    final stamp = version == null || version.isEmpty ? '' : '?v=${Uri.encodeQueryComponent(version)}';
+    return '$root/api/users/$userId/avatar$stamp';
+  }
+
+  Future<UserAccount> updateProfile({String? displayName, bool clearName = false}) async {
+    final response = await _send('PATCH', '/api/me', {
+      if (clearName) 'display_name': '',
+      if (!clearName && displayName != null) 'display_name': displayName,
+    });
+    return UserAccount.fromJson(_jsonMap(response));
+  }
+
+  Future<UserAccount> changeEmail({required String email, required String password}) async {
+    final response = await _send('POST', '/api/me/email', {'email': email, 'password': password});
+    return _storeSession(response);
+  }
+
+  Future<UserAccount> changePassword({required String currentPassword, required String newPassword}) async {
+    final response = await _send('POST', '/api/me/password', {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+    return _storeSession(response);
+  }
+
+  Future<UserAccount> uploadAvatar(List<int> bytes) async {
+    final response = await _send(
+      'PUT',
+      '/api/me/avatar',
+      null,
+      {'content-type': 'image/jpeg'},
+      const Duration(seconds: 20),
+      bytes,
+    );
+    return UserAccount.fromJson(_jsonMap(response));
+  }
+
+  Future<UserAccount> deleteAvatar() async {
+    final response = await _send('DELETE', '/api/me/avatar');
     return UserAccount.fromJson(_jsonMap(response));
   }
 
@@ -384,7 +427,7 @@ class QueroApi {
     return items;
   }
 
-  Future<http.Response> _send(String method, String path, [Object? body, Map<String, String>? headers, Duration timeout = const Duration(seconds: 45)]) async {
+  Future<http.Response> _send(String method, String path, [Object? body, Map<String, String>? headers, Duration timeout = const Duration(seconds: 45), List<int>? raw]) async {
     final uri = Uri.parse('$root$path');
     final request = http.Request(method, uri)..headers['accept'] = 'application/json';
     final current = token;
@@ -392,7 +435,9 @@ class QueroApi {
       request.headers['authorization'] = 'Bearer $current';
     }
     if (headers != null) request.headers.addAll(headers);
-    if (body != null) {
+    if (raw != null) {
+      request.bodyBytes = raw;
+    } else if (body != null) {
       request.headers['content-type'] = 'application/json; charset=utf-8';
       request.body = jsonEncode(body);
     }

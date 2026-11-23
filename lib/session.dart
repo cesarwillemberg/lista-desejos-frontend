@@ -114,6 +114,15 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> applyAccount(UserAccount account, {String? token}) async {
+    user = account;
+    if (token != null && token.isNotEmpty) {
+      api.token = token;
+      await tokens.write(token);
+    }
+    notifyListeners();
+  }
+
   Future<List<WishList>> loadLists({bool force = false}) async {
     if (!force && listsCache != null) return listsCache!;
     final lists = await api.lists();

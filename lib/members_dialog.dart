@@ -6,6 +6,7 @@ import 'api.dart';
 import 'models.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/avatar.dart';
 import 'widgets/member_avatars.dart';
 
 class MembersDialog extends StatefulWidget {
@@ -138,9 +139,12 @@ class _MembersDialogState extends State<MembersDialog> {
       padding: const EdgeInsets.symmetric(vertical: WishlySpace.s2),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: QueroColors.ink,
-            child: Text(member.initials, style: const TextStyle(color: WishlyColor.white, fontWeight: FontWeight.w700)),
+          WishlyAvatar(
+            label: member.label,
+            userId: member.userId,
+            hasAvatar: member.hasAvatar,
+            version: member.avatarAt,
+            api: widget.api,
           ),
           const SizedBox(width: WishlySpace.s3),
           Expanded(

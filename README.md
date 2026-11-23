@@ -25,7 +25,7 @@ flutter run -d chrome --dart-define=API_BASE=http://127.0.0.1:47231
 
 ```bash
 flutter test
-flutter build web --wasm --dart-define=API_BASE=http://127.0.0.1:47231
+flutter build web --wasm --pwa-strategy=none --dart-define=API_BASE=http://127.0.0.1:47231
 flutter build apk --dart-define=API_BASE=https://seu-servidor.example
 flutter build ios --dart-define=API_BASE=https://seu-servidor.example
 ```

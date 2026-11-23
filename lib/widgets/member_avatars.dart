@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../models.dart';
+import '../session.dart';
 import '../theme.dart';
+import 'avatar.dart';
 
 class MemberAvatars extends StatelessWidget {
   const MemberAvatars({super.key, required this.members, this.onDark = false});
@@ -13,21 +15,21 @@ class MemberAvatars extends StatelessWidget {
   Widget build(BuildContext context) {
     final shown = members.take(5).toList();
     if (shown.isEmpty) return const SizedBox.shrink();
+    final api = SessionScope.of(context).api;
     return SizedBox(
       height: WishlySize.avatar,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (var index = 0; index < shown.length; index++)
+          for (final member in shown)
             Align(
               widthFactor: WishlySize.avatarOverlap,
-              child: CircleAvatar(
-                radius: WishlySize.avatarRadius,
-                backgroundColor: index.isEven ? (onDark ? WishlyTokens.inkAvatar : WishlyColor.ink) : WishlyColor.accent,
-                child: Text(
-                  shown[index].initials,
-                  style: TextStyle(color: index.isEven ? WishlyColor.white : WishlyColor.ink, fontSize: WishlyText.xs, fontWeight: FontWeight.w700),
-                ),
+              child: WishlyAvatar(
+                label: member.label,
+                userId: member.userId,
+                hasAvatar: member.hasAvatar,
+                version: member.avatarAt,
+                api: api,
               ),
             ),
         ],

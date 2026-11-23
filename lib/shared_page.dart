@@ -173,7 +173,7 @@ class _SharedPageState extends State<SharedPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= WishlyBreak.lg;
-        Widget card(WishItem item) {
+        Widget card(WishItem item, {bool fillHeight = false}) {
           return ItemCard(
             item: item,
             proxyUrl: api.sharedImageProxy(widget.token, item),
@@ -184,6 +184,7 @@ class _SharedPageState extends State<SharedPage> {
             onDelete: () {},
             onReserve: () => _reserve(item),
             onUnreserve: item.reservedByMe ? () => _unreserve(item) : null,
+            fillHeight: fillHeight,
           );
         }
         final shown = sortedWishItems(_hidePurchased ? items.where((item) => !item.purchased) : items);
@@ -194,7 +195,7 @@ class _SharedPageState extends State<SharedPage> {
             wide: wide,
             hidePurchased: _hidePurchased,
             onHidePurchased: (value) => setState(() => _hidePurchased = value),
-            cardBuilder: (item, fill) => card(item),
+            cardBuilder: (item, fill) => card(item, fillHeight: fill),
           );
         }
         final list = !wide
@@ -203,7 +204,7 @@ class _SharedPageState extends State<SharedPage> {
                 separatorBuilder: (context, index) => const SizedBox(height: WishlySpace.s4),
                 itemBuilder: (context, index) => card(shown[index]),
               )
-            : ListView(children: [ItemWrap(count: shown.length, itemBuilder: (index) => card(shown[index]))]);
+            : ListView(children: [ItemWrap(count: shown.length, itemBuilder: (index) => card(shown[index], fillHeight: true))]);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

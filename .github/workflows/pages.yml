@@ -45,7 +45,16 @@ jobs:
         run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --wasm --base-href /lista-desejos-frontend/ --dart-define=API_BASE="${API_BASE}"
+        run: |
+          BUILD_ID="${GITHUB_SHA}"
+          flutter build web --release --wasm --pwa-strategy=none \
+            --base-href /lista-desejos-frontend/ \
+            --dart-define=API_BASE="${API_BASE}" \
+            --dart-define=WISHLY_BUILD="${BUILD_ID}"
+          python3 -c 'import json,os,pathlib; pathlib.Path("build/web/version.json").write_text(json.dumps({"build": os.environ["BUILD_ID"]}) + "\n")'
+          cp web/flutter_service_worker.js build/web/flutter_service_worker.js
+        env:
+          BUILD_ID: ${{ github.sha }}
 
       - name: Pages extras
         run: |

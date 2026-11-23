@@ -3,6 +3,7 @@ import 'package:quero/api.dart';
 import 'package:quero/links.dart';
 import 'package:quero/main.dart';
 import 'package:quero/money.dart';
+import 'package:quero/scrape_copy.dart';
 import 'package:quero/session.dart';
 
 void main() {
@@ -17,6 +18,14 @@ void main() {
     expect(parseUserPrice('1.299,90'), 1299.90);
     expect(parseUserPrice('R\$ 584,10'), 584.10);
     expect(parseUserPrice(''), null);
+  });
+
+  test('junta um único aviso quando a loja bloqueia a busca', () {
+    const joined = 'Essa loja bloqueia a busca automática; edite o preço manualmente Mantivemos a foto e o preço que já estavam salvos.';
+    expect(conciseScrapeMessage(joined), blockedRetryMessage);
+    expect(conciseScrapeMessage(joined).contains('Mantivemos'), isFalse);
+    expect(offerScrapeRetry(status: 'failed', message: blockedRetryMessage), isTrue);
+    expect(offerScrapeRetry(status: 'partial', message: 'Atualizamos a foto, mas o preço continua indisponível.'), isFalse);
   });
 
   test('lê código de link curto e do esquema do app', () {

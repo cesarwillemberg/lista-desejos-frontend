@@ -17,6 +17,12 @@ class WishItem {
     this.reservedLabel,
     this.reservedByMe = false,
     this.addedByLabel,
+    this.addedById,
+    this.addedByHasAvatar = false,
+    this.addedByAvatarAt,
+    this.reservedById,
+    this.reservedByHasAvatar = false,
+    this.reservedByAvatarAt,
     this.purchased = false,
     this.purchasedAt,
     this.purchasedByLabel,
@@ -46,6 +52,12 @@ class WishItem {
   final String? reservedLabel;
   final bool reservedByMe;
   final String? addedByLabel;
+  final String? addedById;
+  final bool addedByHasAvatar;
+  final String? addedByAvatarAt;
+  final String? reservedById;
+  final bool reservedByHasAvatar;
+  final String? reservedByAvatarAt;
   final bool purchased;
   final DateTime? purchasedAt;
   final String? purchasedByLabel;
@@ -82,6 +94,12 @@ class WishItem {
       reservedLabel: reservedLabel,
       reservedByMe: reservedByMe,
       addedByLabel: addedByLabel,
+      addedById: addedById,
+      addedByHasAvatar: addedByHasAvatar,
+      addedByAvatarAt: addedByAvatarAt,
+      reservedById: reservedById,
+      reservedByHasAvatar: reservedByHasAvatar,
+      reservedByAvatarAt: reservedByAvatarAt,
       purchased: purchased,
       purchasedAt: purchasedAt,
       purchasedByLabel: purchasedByLabel,
@@ -114,6 +132,12 @@ class WishItem {
       reservedLabel: json['reserved_label'] as String?,
       reservedByMe: json['reserved_by_me'] == true,
       addedByLabel: json['added_by_label'] as String?,
+      addedById: json['added_by_id'] as String?,
+      addedByHasAvatar: json['added_by_has_avatar'] == true,
+      addedByAvatarAt: json['added_by_avatar_at'] as String?,
+      reservedById: json['reserved_by_id'] as String?,
+      reservedByHasAvatar: json['reserved_by_has_avatar'] == true,
+      reservedByAvatarAt: json['reserved_by_avatar_at'] as String?,
       purchased: json['purchased'] == true,
       purchasedAt: json['purchased_at'] == null ? null : DateTime.tryParse(json['purchased_at'] as String),
       purchasedByLabel: json['purchased_by_label'] as String?,
@@ -208,13 +232,38 @@ List<MoneyTotal> sumItemPrices(Iterable<WishItem> items) {
 }
 
 class UserAccount {
-  const UserAccount({required this.id, required this.email});
+  const UserAccount({
+    required this.id,
+    required this.email,
+    this.displayName,
+    this.hasAvatar = false,
+    this.avatarAt,
+    this.emailPriceAlerts = true,
+  });
 
   final String id;
   final String email;
+  final String? displayName;
+  final bool hasAvatar;
+  final String? avatarAt;
+  final bool emailPriceAlerts;
+
+  String get name {
+    final typed = displayName?.trim() ?? '';
+    if (typed.isNotEmpty) return typed;
+    final local = email.split('@').first.trim();
+    return local.isEmpty ? email : local;
+  }
 
   factory UserAccount.fromJson(Map<String, dynamic> json) {
-    return UserAccount(id: json['id'] as String, email: json['email'] as String);
+    return UserAccount(
+      id: json['id'] as String,
+      email: json['email'] as String,
+      displayName: json['display_name'] as String?,
+      hasAvatar: json['has_avatar'] == true,
+      avatarAt: json['avatar_at'] as String?,
+      emailPriceAlerts: json['email_price_alerts'] != false,
+    );
   }
 }
 
@@ -225,6 +274,8 @@ class ListMember {
     required this.label,
     required this.initials,
     required this.role,
+    this.hasAvatar = false,
+    this.avatarAt,
   });
 
   final String userId;
@@ -232,6 +283,8 @@ class ListMember {
   final String label;
   final String initials;
   final String role;
+  final bool hasAvatar;
+  final String? avatarAt;
 
   factory ListMember.fromJson(Map<String, dynamic> json) {
     return ListMember(
@@ -240,6 +293,8 @@ class ListMember {
       label: (json['label'] as String?) ?? '',
       initials: (json['initials'] as String?) ?? '?',
       role: (json['role'] as String?) ?? 'viewer',
+      hasAvatar: json['has_avatar'] == true,
+      avatarAt: json['avatar_at'] as String?,
     );
   }
 }

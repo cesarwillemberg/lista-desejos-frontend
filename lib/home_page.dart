@@ -12,6 +12,7 @@ import 'theme.dart';
 import 'grouped_items.dart';
 import 'list_sidebar.dart';
 import 'members_dialog.dart';
+import 'widgets/avatar.dart';
 import 'widgets/item_form.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/item_card.dart';
@@ -485,6 +486,7 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
           priority: _priority,
           onPriority: (value) => setState(() => _priority = value),
           onReorder: _canReorder ? _reorderGroup : null,
+          reorderHint: _sort == 'manual' ? null : 'A ordenação manual está desligada. Escolha Manual para arrastar os cards.',
         );
         final sidebar = ListSidebar(
           lists: _allLists,
@@ -733,6 +735,7 @@ class _Board extends StatelessWidget {
     this.priority = 'todas',
     this.onPriority,
     this.onReorder,
+    this.reorderHint,
   });
 
   final String title;
@@ -773,6 +776,7 @@ class _Board extends StatelessWidget {
   final String priority;
   final ValueChanged<String>? onPriority;
   final void Function(String? categoryId, int oldIndex, int newIndex)? onReorder;
+  final String? reorderHint;
 
   @override
   Widget build(BuildContext context) {
@@ -848,18 +852,48 @@ class _Board extends StatelessWidget {
                       onDeleteList?.call();
                     case 'refresh':
                       onReload();
+                    case 'settings':
+                      Navigator.of(context).pushNamed('/configuracoes');
                     default:
                       break;
                   }
                 },
-                itemBuilder: (context) => [
+                itemBuilder: (context) {
+                  final user = SessionScope.of(context).user;
+                  return [
+                  PopupMenuItem(
+                    value: 'settings',
+                    child: Row(
+                      children: [
+                        WishlyAvatar(
+                          label: user?.name ?? 'Conta',
+                          userId: user?.id,
+                          hasAvatar: user?.hasAvatar ?? false,
+                          version: user?.avatarAt,
+                          api: SessionScope.of(context).api,
+                          radius: 14,
+                        ),
+                        const SizedBox(width: WishlySpace.s3),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(user?.name ?? 'Conta', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('Configurações', style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (onMembers != null) const PopupMenuItem(value: 'members', child: Text('Membros')),
                   if (onCategories != null) const PopupMenuItem(value: 'categories', child: Text('Categorias')),
                   if (onRenameList != null) const PopupMenuItem(value: 'rename', child: Text('Renomear lista')),
                   if (onDeleteList != null)
                     PopupMenuItem(value: 'delete', child: Text('Excluir lista', style: TextStyle(color: context.wishlyDanger))),
                   const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
-                ],
+                  ];
+                },
               ),
             ],
             flexibleSpace: _CollapsingListTitle(title: title),
@@ -918,7 +952,7 @@ class _Board extends StatelessWidget {
           if (shown.isEmpty)
             const SliverFillRemaining(hasScrollBody: false, child: EmptyState(title: 'Nada por aqui ainda', message: 'Cole o link de um produto para guardar a foto e o preço.'))
           else if (onReorder != null)
-            SliverToBoxAdapter(child: ReorderableItemList(items: shown, wide: false, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: _card))
+            SliverToBoxAdapter(child: ReorderableItemList(items: shown, enabled: true, hint: reorderHint, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: (item) => _card(item, fillHeight: true)))
           else
             SliverList.separated(
               itemCount: shown.length,
@@ -939,7 +973,8 @@ class _Board extends StatelessWidget {
         onAddInCategory: onAddInCategory,
         keepOrder: true,
         onReorder: onReorder,
-        cardBuilder: (item, fill) => _card(item),
+        reorderHint: reorderHint,
+        cardBuilder: (item, fill) => _card(item, fillHeight: fill),
       ),
     );
   }
@@ -968,12 +1003,12 @@ class _Board extends StatelessWidget {
           : onReorder != null
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: [ReorderableItemList(items: shown, wide: wide, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: _card)],
+                  children: [ReorderableItemList(items: shown, enabled: true, hint: reorderHint, onReorder: (oldIndex, newIndex) => onReorder!(null, oldIndex, newIndex), cardBuilder: (item) => _card(item, fillHeight: true))],
                 )
               : wide
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: [ItemWrap(count: shown.length, itemBuilder: (index) => _card(shown[index]))],
+                      children: [ItemWrap(count: shown.length, itemBuilder: (index) => _card(shown[index], fillHeight: true))],
                     )
                   : ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -993,7 +1028,8 @@ class _Board extends StatelessWidget {
       onAddInCategory: onAddInCategory,
       keepOrder: true,
       onReorder: onReorder,
-      cardBuilder: (item, fill) => _card(item),
+      reorderHint: reorderHint,
+      cardBuilder: (item, fill) => _card(item, fillHeight: fill),
     );
   }
 
@@ -1015,7 +1051,7 @@ class _Board extends StatelessWidget {
     return RefreshIndicator(color: context.wishlyInk, onRefresh: onReload, child: child);
   }
 
-  Widget _card(WishItem item) {
+  Widget _card(WishItem item, {bool fillHeight = false}) {
     final viewer = !canEdit;
     return ItemCard(
       item: item,
@@ -1029,6 +1065,7 @@ class _Board extends StatelessWidget {
       onDelete: () => onDelete(item),
       onReserve: viewer && !item.reserved && onReserve != null ? () => onReserve!(item) : null,
       onUnreserve: item.reserved && (viewer ? item.reservedByMe : true) ? () => onUnreserve(item) : null,
+      fillHeight: fillHeight,
     );
   }
 }

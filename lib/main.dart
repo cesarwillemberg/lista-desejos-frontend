@@ -14,9 +14,11 @@ import 'links.dart';
 import 'lists_page.dart';
 import 'document_scheme.dart';
 import 'session.dart';
+import 'settings_page.dart';
 import 'share_in_page.dart';
 import 'shared_page.dart';
 import 'theme.dart';
+import 'update_notice.dart';
 import 'widgets/skeleton.dart';
 
 void main() {
@@ -130,6 +132,14 @@ class _QueroAppState extends State<QueroApp> with WidgetsBindingObserver {
         theme: queroTheme(),
         darkTheme: queroTheme(brightness: Brightness.dark),
         themeMode: _mode,
+        builder: (context, child) {
+          return Column(
+            children: [
+              const UpdateNotice(),
+              Expanded(child: child ?? const SizedBox.shrink()),
+            ],
+          );
+        },
         onGenerateRoute: (settings) {
           final name = settings.name ?? '/';
           return MaterialPageRoute(settings: settings, builder: (context) => _route(name));
@@ -153,6 +163,9 @@ Widget _route(String name) {
   }
   if (path.startsWith('/l/') && path.length > 3) {
     return SharedPage(token: Uri.decodeComponent(path.substring(3)));
+  }
+  if (path == '/configuracoes') {
+    return const _Gate(child: SettingsPage());
   }
   if (path.startsWith('/list/') && path.length > 6) {
     return _Gate(child: ListDetailPage(listId: Uri.decodeComponent(path.substring(6))));

@@ -6,6 +6,7 @@ import 'money.dart';
 import 'install.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/avatar.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/member_avatars.dart';
 import 'widgets/skeleton.dart';
@@ -136,12 +137,30 @@ class _ListsPageState extends State<ListsPage> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Wishly', style: fraunces(WishlyText.xl3, style: FontStyle.italic, color: QueroColors.cream)),
-                          Text(email, style: const TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.sm)),
-                        ],
+                      child: InkWell(
+                        onTap: () => Navigator.of(context).pushNamed('/configuracoes'),
+                        child: Row(
+                          children: [
+                            WishlyAvatar(
+                              label: SessionScope.of(context).user?.name ?? email,
+                              userId: SessionScope.of(context).user?.id,
+                              hasAvatar: SessionScope.of(context).user?.hasAvatar ?? false,
+                              version: SessionScope.of(context).user?.avatarAt,
+                              api: SessionScope.of(context).api,
+                              radius: 18,
+                            ),
+                            const SizedBox(width: WishlySpace.s3),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Wishly', style: fraunces(WishlyText.xl3, style: FontStyle.italic, color: QueroColors.cream)),
+                                  Text(SessionScope.of(context).user?.name ?? email, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.sm)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     PopupMenuButton<ThemeMode>(

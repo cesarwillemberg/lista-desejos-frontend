@@ -1,10 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models.dart';
 import '../money.dart';
+import '../scrape_copy.dart';
+import '../session.dart';
 import '../theme.dart';
+import 'avatar.dart';
 import 'placeholder_art.dart';
 
 const _grey = ColorFilter.matrix(<double>[
@@ -28,6 +34,7 @@ class ItemCard extends StatelessWidget {
     this.onUnreserve,
     this.onTogglePurchased,
     this.imageHeaders,
+    this.fillHeight = false,
   });
 
   final WishItem item;
@@ -41,6 +48,7 @@ class ItemCard extends StatelessWidget {
   final VoidCallback? onUnreserve;
   final VoidCallback? onTogglePurchased;
   final Map<String, String>? imageHeaders;
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +60,17 @@ class ItemCard extends StatelessWidget {
       onEdit: onEdit,
       onDelete: onDelete,
       onReserve: onReserve,
+      onUnreserve: onUnreserve,
+      onTogglePurchased: onTogglePurchased,
+      showActions: !fillHeight,
+    );
+    final actions = _CardActions(
+      item: item,
+      busy: busy,
+      readOnly: readOnly,
+      onRefresh: onRefresh,
+      onEdit: onEdit,
+      onDelete: onDelete,
       onUnreserve: onUnreserve,
       onTogglePurchased: onTogglePurchased,
     );
@@ -69,42 +88,61 @@ class ItemCard extends StatelessWidget {
       color: context.wishlyCream,
       borderRadius: BorderRadius.circular(WishlyCard.radius),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(WishlySpace.s3, WishlySpace.s3, WishlySpace.s3, WishlySpace.s0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(WishlyRadius.xl),
-              child: AspectRatio(
-                aspectRatio: WishlyCard.imageAspect,
-                child: ColoredBox(
-                  color: context.wishlyImage,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _StoreLink(url: item.url, child: image),
-                      if (item.purchased)
-                        const Positioned(
-                          left: WishlySpace.s3,
-                          top: WishlySpace.s3,
-                          child: _BoughtBadge(),
-                        ),
-                      if (busy || waiting)
-                        ColoredBox(
-                          color: context.wishlyScrim,
-                          child: Center(child: CircularProgressIndicator(strokeWidth: WishlySize.strokeBold, color: context.wishlyInk)),
-                        ),
-                    ],
-                  ),
-                ),
+      child: fillHeight
+          ? _PinBottom(
+              top: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _cardImage(context, image, waiting),
+                  details,
+                ],
               ),
+              bottom: Padding(
+                padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s2, WishlySpace.s4, WishlySpace.s2),
+                child: actions,
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _cardImage(context, image, waiting),
+                details,
+              ],
+            ),
+      ),
+    );
+  }
+
+  Widget _cardImage(BuildContext context, Widget image, bool waiting) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(WishlySpace.s3, WishlySpace.s3, WishlySpace.s3, WishlySpace.s0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(WishlyRadius.xl),
+        child: AspectRatio(
+          aspectRatio: WishlyCard.imageAspect,
+          child: ColoredBox(
+            color: context.wishlyImage,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _StoreLink(url: item.url, child: image),
+                if (item.purchased)
+                  const Positioned(
+                    left: WishlySpace.s3,
+                    top: WishlySpace.s3,
+                    child: _BoughtBadge(),
+                  ),
+                if (busy || waiting)
+                  ColoredBox(
+                    color: context.wishlyScrim,
+                    child: Center(child: CircularProgressIndicator(strokeWidth: WishlySize.strokeBold, color: context.wishlyInk)),
+                  ),
+              ],
             ),
           ),
-          details,
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -226,6 +264,7 @@ class _CardDetails extends StatelessWidget {
     this.onReserve,
     this.onUnreserve,
     this.onTogglePurchased,
+    this.showActions = true,
   });
 
   final WishItem item;
@@ -237,6 +276,7 @@ class _CardDetails extends StatelessWidget {
   final VoidCallback? onReserve;
   final VoidCallback? onUnreserve;
   final VoidCallback? onTogglePurchased;
+  final bool showActions;
 
   @override
   Widget build(BuildContext context) {
@@ -275,11 +315,29 @@ class _CardDetails extends StatelessWidget {
           ),
           if (item.addedByLabel != null && item.addedByLabel!.isNotEmpty) ...[
             const SizedBox(height: WishlySpace.s1),
-            Text(
-              'adicionado por ${item.addedByLabel}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs),
+            Row(
+              children: [
+                if (item.addedById != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: WishlySpace.s1),
+                    child: WishlyAvatar(
+                      label: item.addedByLabel!,
+                      userId: item.addedById,
+                      hasAvatar: item.addedByHasAvatar,
+                      version: item.addedByAvatarAt,
+                      api: SessionScope.of(context).api,
+                      radius: 8,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    'adicionado por ${item.addedByLabel}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs),
+                  ),
+                ),
+              ],
             ),
           ],
           const SizedBox(height: WishlySpace.s3),
@@ -319,61 +377,162 @@ class _CardDetails extends StatelessWidget {
             ),
           if (item.message != null && item.status != 'ok') ...[
             const SizedBox(height: WishlySpace.s3),
-            DecoratedBox(
-              decoration: BoxDecoration(color: context.wishlyNote, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s2),
-                child: Text(
-                  item.message!,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: context.wishlyInk, fontSize: WishlyText.sm, height: WishlyText.body),
-                ),
-              ),
-            ),
+            _ScrapeNote(message: item.message!),
           ],
           if (item.reserved) ...[
             const SizedBox(height: WishlySpace.s2),
-            Text(
-              item.reservedByMe
-                  ? 'Você marcou este item'
-                  : (item.reservedLabel == null ? 'Reservado' : 'Reservado por ${item.reservedLabel}'),
-              style: TextStyle(color: context.wishlyForest, fontWeight: FontWeight.w600, fontSize: WishlyText.sm),
+            Row(
+              children: [
+                if (item.reservedById != null || item.reservedByMe)
+                  Padding(
+                    padding: const EdgeInsets.only(right: WishlySpace.s2),
+                    child: WishlyAvatar(
+                      label: item.reservedByMe
+                          ? (SessionScope.of(context).user?.name ?? item.reservedLabel ?? 'Você')
+                          : (item.reservedLabel ?? 'Reservado'),
+                      userId: item.reservedById ?? SessionScope.of(context).user?.id,
+                      hasAvatar: item.reservedById != null
+                          ? item.reservedByHasAvatar
+                          : (SessionScope.of(context).user?.hasAvatar ?? false),
+                      version: item.reservedByAvatarAt ?? SessionScope.of(context).user?.avatarAt,
+                      api: SessionScope.of(context).api,
+                      radius: 8,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    item.reservedByMe
+                        ? 'Você marcou este item'
+                        : (item.reservedLabel == null ? 'Reservado' : 'Reservado por ${item.reservedLabel}'),
+                    style: TextStyle(color: context.wishlyForest, fontWeight: FontWeight.w600, fontSize: WishlyText.sm),
+                  ),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: WishlySpace.s2),
-          Row(
-            children: [
-              if (!readOnly && onTogglePurchased != null) _BuyToggle(purchased: item.purchased, onPressed: busy ? null : onTogglePurchased),
-              if (!readOnly && item.status == 'failed') _Action(label: 'Tentar de novo', onPressed: busy ? null : onRefresh),
-              const Spacer(),
-              if (!readOnly)
-                PopupMenuButton<String>(
-                  tooltip: 'Ações',
-                  icon: const Icon(Icons.more_vert, size: WishlyIcon.md),
-                  padding: EdgeInsets.zero,
-                  onSelected: (value) => switch (value) {
-                    'refresh' => onRefresh(),
-                    'edit' => onEdit(),
-                    'delete' => onDelete(),
-                    'release' => onUnreserve?.call(),
-                    _ => null,
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
-                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
-                    if (item.reserved && onUnreserve != null) const PopupMenuItem(value: 'release', child: Text('Liberar')),
-                    PopupMenuItem(value: 'delete', child: Text('Excluir', style: TextStyle(color: context.wishlyDanger))),
-                  ],
-                )
-              else ...[
-                if (!item.reserved && onReserve != null) _Action(label: 'Eu vou dar esse', onPressed: busy ? null : onReserve),
-                if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
-              ],
-            ],
-          ),
+          if (showActions) ...[
+            const SizedBox(height: WishlySpace.s2),
+            _CardActions(
+              item: item,
+              busy: busy,
+              readOnly: readOnly,
+              onRefresh: onRefresh,
+              onEdit: onEdit,
+              onDelete: onDelete,
+              onUnreserve: onUnreserve,
+              onTogglePurchased: onTogglePurchased,
+              onReserve: onReserve,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _ScrapeNote extends StatelessWidget {
+  const _ScrapeNote({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final short = conciseScrapeMessage(message);
+    return Tooltip(
+      message: message,
+      child: InkWell(
+        onTap: () {
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: context.wishlyCream,
+              content: Text(message, style: TextStyle(color: context.wishlyInk, height: WishlyText.body)),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(WishlyRadius.lg),
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: context.wishlyNote, borderRadius: BorderRadius.circular(WishlyRadius.lg)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s3, vertical: WishlySpace.s2),
+            child: Text(
+              short,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: context.wishlyInk, fontSize: WishlyText.sm, height: WishlyText.body),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardActions extends StatelessWidget {
+  const _CardActions({
+    required this.item,
+    required this.busy,
+    required this.readOnly,
+    required this.onRefresh,
+    required this.onEdit,
+    required this.onDelete,
+    this.onReserve,
+    this.onUnreserve,
+    this.onTogglePurchased,
+  });
+
+  final WishItem item;
+  final bool busy;
+  final bool readOnly;
+  final VoidCallback onRefresh;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback? onReserve;
+  final VoidCallback? onUnreserve;
+  final VoidCallback? onTogglePurchased;
+
+  @override
+  Widget build(BuildContext context) {
+    final retry = !readOnly && offerScrapeRetry(status: item.status, message: item.message);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (retry)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _Action(label: 'Tentar de novo', onPressed: busy ? null : onRefresh),
+          ),
+        Row(
+          children: [
+            if (!readOnly && onTogglePurchased != null) _BuyToggle(purchased: item.purchased, onPressed: busy ? null : onTogglePurchased),
+            const Spacer(),
+            if (!readOnly)
+              PopupMenuButton<String>(
+                tooltip: 'Ações',
+                icon: const Icon(Icons.more_vert, size: WishlyIcon.md),
+                padding: EdgeInsets.zero,
+                onSelected: (value) => switch (value) {
+                  'refresh' => onRefresh(),
+                  'edit' => onEdit(),
+                  'delete' => onDelete(),
+                  'release' => onUnreserve?.call(),
+                  _ => null,
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'refresh', child: Text('Atualizar')),
+                  const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                  if (item.reserved && onUnreserve != null) const PopupMenuItem(value: 'release', child: Text('Liberar')),
+                  PopupMenuItem(value: 'delete', child: Text('Excluir', style: TextStyle(color: context.wishlyDanger))),
+                ],
+              )
+            else ...[
+              if (!item.reserved && onReserve != null) _Action(label: 'Eu vou dar esse', onPressed: busy ? null : onReserve),
+              if (item.reservedByMe && onUnreserve != null) _Action(label: 'Desmarcar', onPressed: busy ? null : onUnreserve),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }
@@ -469,11 +628,23 @@ class ItemWrap extends StatelessWidget {
         final estimated = (constraints.maxWidth / maxCard).floor();
         final columns = estimated < 1 ? 1 : estimated;
         final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - gap * (columns - 1)) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
+        return Column(
           children: [
-            for (var index = 0; index < count; index++) SizedBox(width: width, child: itemBuilder(index)),
+            for (var start = 0; start < count; start += columns)
+              Padding(
+                padding: const EdgeInsets.only(bottom: gap),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var index = start; index < math.min(start + columns, count); index++) ...[
+                        if (index > start) const SizedBox(width: gap),
+                        SizedBox(width: width, child: itemBuilder(index)),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -534,4 +705,68 @@ class _ProductImage extends StatelessWidget {
         ),
     );
   }
+}
+
+class _PinBottom extends MultiChildRenderObjectWidget {
+  _PinBottom({required Widget top, required Widget bottom}) : super(children: [top, bottom]);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderPinBottom();
+}
+
+class _PinParentData extends ContainerBoxParentData<RenderBox> {}
+
+/// Lays the footer at the bottom when the parent gives a height, and reports
+/// the content height as its intrinsic height so a row can match the tallest card.
+class _RenderPinBottom extends RenderBox with ContainerRenderObjectMixin<RenderBox, _PinParentData>, RenderBoxContainerDefaultsMixin<RenderBox, _PinParentData> {
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _PinParentData) child.parentData = _PinParentData();
+  }
+
+  RenderBox get _top => firstChild!;
+  RenderBox get _bottom => childAfter(firstChild!)!;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    return _top.getMaxIntrinsicHeight(width) + _bottom.getMaxIntrinsicHeight(width);
+  }
+
+  @override
+  double computeMinIntrinsicHeight(double width) => computeMaxIntrinsicHeight(width);
+
+  @override
+  double computeMaxIntrinsicWidth(double height) {
+    return math.max(_top.getMaxIntrinsicWidth(height), _bottom.getMaxIntrinsicWidth(height));
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) => computeMaxIntrinsicWidth(height);
+
+  @override
+  void performLayout() {
+    final width = constraints.maxWidth;
+    final loose = BoxConstraints(maxWidth: width);
+    _bottom.layout(loose, parentUsesSize: true);
+    final footer = _bottom.size.height;
+    if (constraints.hasTightHeight) {
+      final height = constraints.maxHeight;
+      final body = math.max(0.0, height - footer);
+      _top.layout(BoxConstraints.tightFor(width: width, height: body), parentUsesSize: true);
+      (_top.parentData! as _PinParentData).offset = Offset.zero;
+      (_bottom.parentData! as _PinParentData).offset = Offset(0, height - footer);
+      size = Size(width, height);
+      return;
+    }
+    _top.layout(loose, parentUsesSize: true);
+    (_top.parentData! as _PinParentData).offset = Offset.zero;
+    (_bottom.parentData! as _PinParentData).offset = Offset(0, _top.size.height);
+    size = constraints.constrain(Size(width, _top.size.height + footer));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) => defaultHitTestChildren(result, position: position);
 }

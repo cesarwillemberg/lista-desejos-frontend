@@ -107,14 +107,28 @@
       event.preventDefault();
       window.wishlyInstall = event;
     });
+    window.wishlyApplyUpdate = async function () {
+      try {
+        if (navigator.serviceWorker) {
+          var regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+        }
+        if (window.caches) {
+          var keys = await caches.keys();
+          await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+        }
+      } catch (error) {}
+      var next = new URL(window.location.href);
+      next.searchParams.set('atualizado', Date.now().toString());
+      window.location.replace(next.toString());
+    };
   </script>
   <script src="flutter_bootstrap.js" async></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function () {});
-      });
-    }
-  </script>
+  <!--
+    Do not register sw.js. Flutter's loader, if it finds any service worker,
+    also registers flutter_service_worker.js. That file is now a one-shot
+    cleanup for browsers stuck on the old cache-first worker. Registering
+    another worker would make the loader install it again after every reload.
+  -->
 </body>
 </html>
