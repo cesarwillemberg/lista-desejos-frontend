@@ -21,7 +21,7 @@ extension WishlyContext on BuildContext {
   Color get wishlyPlaceholder => wishlyDark ? WishlyDark.placeholder : WishlyColor.placeholder;
   Color get wishlyPlaceholderLine => wishlyDark ? WishlyDark.placeholderLine : WishlyColor.placeholderLine;
   Color get wishlyScrim => wishlyDark ? WishlyDark.scrim : WishlyColor.scrim;
-  Color get wishlyOnAccent => wishlyDark ? WishlyColor.ink : WishlyColor.white;
+  Color get wishlyOnAccent => WishlyColor.white;
   Color get wishlyOnForest => wishlyDark ? WishlyColor.ink : WishlyColor.white;
 }
 
@@ -98,7 +98,7 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
     colorScheme: ColorScheme(
       brightness: brightness,
       primary: accent,
-      onPrimary: dark ? WishlyColor.ink : WishlyColor.white,
+      onPrimary: WishlyColor.white,
       secondary: forest,
       onSecondary: dark ? WishlyColor.ink : WishlyColor.white,
       error: danger,
@@ -138,7 +138,7 @@ ThemeData queroTheme({Brightness brightness = Brightness.light}) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: accent,
-        foregroundColor: dark ? WishlyColor.ink : WishlyColor.white,
+        foregroundColor: WishlyColor.white,
         minimumSize: const Size(WishlySize.tap, WishlySize.tap),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: WishlyText.base),

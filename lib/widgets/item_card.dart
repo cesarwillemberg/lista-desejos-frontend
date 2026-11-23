@@ -123,7 +123,7 @@ String _detailLine(WishItem item) {
 String _priorityLabel(String priority) {
   switch (priority) {
     case 'muito':
-      return 'Muito quero';
+      return 'Quero muito';
     case 'talvez':
       return 'Talvez';
     default:
@@ -345,6 +345,7 @@ class _CardDetails extends StatelessWidget {
           Row(
             children: [
               if (!readOnly && onTogglePurchased != null) _BuyToggle(purchased: item.purchased, onPressed: busy ? null : onTogglePurchased),
+              if (!readOnly && item.status == 'failed') _Action(label: 'Tentar de novo', onPressed: busy ? null : onRefresh),
               const Spacer(),
               if (!readOnly)
                 PopupMenuButton<String>(

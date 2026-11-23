@@ -1366,7 +1366,7 @@ class _FindSortState extends State<_FindSort> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                for (final choice in const [('todas', 'Todas'), ('muito', 'Muito quero'), ('quero', 'Quero'), ('talvez', 'Talvez')])
+                for (final choice in const [('todas', 'Todas'), ('muito', 'Quero muito'), ('quero', 'Quero'), ('talvez', 'Talvez')])
                   Padding(
                     padding: const EdgeInsets.only(right: WishlySpace.s2),
                     child: FilterChip(

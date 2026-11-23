@@ -290,7 +290,7 @@ class _ItemFormState extends State<ItemForm> {
           _menu<String>(
             value: _priority,
             entries: const [
-              (value: 'muito', label: 'Muito quero'),
+              (value: 'muito', label: 'Quero muito'),
               (value: 'quero', label: 'Quero'),
               (value: 'talvez', label: 'Talvez'),
             ],

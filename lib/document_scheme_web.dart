@@ -27,10 +27,7 @@ extension type _Node(JSObject _) implements JSObject {
   external set textContent(JSString value);
 }
 
-var _dark = false;
-
 void applyDocumentScheme(bool dark) {
-  _dark = dark;
   final scheme = (dark ? 'dark' : 'light').toJS;
   _root.setAttribute('data-wishly-theme'.toJS, scheme);
   _root.style.setProperty('color-scheme'.toJS, scheme);
@@ -46,8 +43,7 @@ void _paintInputs() {
   if (found == null) return;
   final pane = _Node(found);
   final root = _Node(pane.shadowRoot ?? found);
-  final ink = _dark ? '#F3EEE6' : '#241C17';
-  final css = 'input,textarea{background:transparent!important;color:$ink!important;-webkit-text-fill-color:$ink!important;caret-color:#E25B2A!important;}';
+  final css = 'input,textarea{background:transparent!important;color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent!important;text-shadow:none!important;}';
   final existing = root.querySelector('#wishly-input-color'.toJS);
   if (existing != null) {
     _Node(existing).textContent = css.toJS;
