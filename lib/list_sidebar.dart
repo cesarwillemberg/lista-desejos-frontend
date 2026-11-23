@@ -5,6 +5,7 @@ import 'models.dart';
 import 'money.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/account_menu.dart';
 import 'widgets/avatar.dart';
 import 'widgets/member_avatars.dart';
 
@@ -146,7 +147,7 @@ class _ListSidebarState extends State<ListSidebar> {
           ),
         ),
         IconButton(onPressed: widget.onCreate, tooltip: 'Nova lista', color: QueroColors.cream, icon: const Icon(Icons.add)),
-        _accountButton(compact: true),
+        _railAccount(),
       ],
     );
   }
@@ -158,123 +159,102 @@ class _ListSidebarState extends State<ListSidebar> {
     final bought = widget.snapshot.purchasedTotals.isEmpty
         ? null
         : formatMoney(widget.snapshot.purchasedTotals.first.amount, widget.snapshot.purchasedTotals.first.currency.isEmpty ? null : widget.snapshot.purchasedTotals.first.currency);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s3, WishlySpace.s4, WishlySpace.s5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(WishlySpace.s5, WishlySpace.s3, WishlySpace.s4, WishlySpace.s3),
             children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: widget.onBack,
-                  style: TextButton.styleFrom(foregroundColor: QueroColors.cream, alignment: Alignment.centerLeft),
-                  child: const Text('← Suas listas'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: widget.onBack,
+                      style: TextButton.styleFrom(foregroundColor: QueroColors.cream, alignment: Alignment.centerLeft),
+                      child: const Text('← Suas listas'),
+                    ),
+                  ),
+                  if (widget.resizable)
+                    IconButton(onPressed: _toggle, tooltip: 'Recolher', color: QueroColors.cream, icon: const Icon(Icons.keyboard_double_arrow_left)),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+                child: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
+              ),
+              if (widget.onMembers != null)
+                TextButton.icon(
+                  onPressed: widget.onMembers,
+                  icon: const Icon(Icons.group_outlined, color: QueroColors.cream, size: WishlyIcon.lg),
+                  label: const Text('Membros', style: TextStyle(color: QueroColors.cream)),
+                ),
+              const SizedBox(height: WishlySpace.s2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+                child: Row(
+                  children: [
+                    const Expanded(child: Text('LISTAS', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700))),
+                    TextButton(onPressed: widget.onCreate, child: const Text('Nova lista', style: TextStyle(color: QueroColors.accent))),
+                  ],
                 ),
               ),
-              if (widget.resizable)
-                IconButton(onPressed: _toggle, tooltip: 'Recolher', color: QueroColors.cream, icon: const Icon(Icons.keyboard_double_arrow_left)),
+              for (final list in widget.lists)
+                ListTile(
+                  selected: list.id == widget.currentId,
+                  selectedTileColor: WishlyTokens.inkRaised,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
+                  title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? WishlyColor.white : QueroColors.cream, fontWeight: FontWeight.w700)),
+                  subtitle: list.collaborative
+                      ? Row(
+                          children: [
+                            MemberAvatars(members: list.members, onDark: true),
+                            const SizedBox(width: WishlySpace.s2),
+                            const SharedBadge(onDark: true),
+                          ],
+                        )
+                      : null,
+                  isThreeLine: list.collaborative,
+                  trailing: Text('${list.itemCount}', style: const TextStyle(color: WishlyTokens.onInk)),
+                  onTap: () => widget.onSelect(list),
+                ),
+              const SizedBox(height: WishlySpace.s3),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+                child: Text('FALTA COMPRAR', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s2),
+                child: Text(total, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
+              ),
+              if (bought != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
+                  child: Text('Já comprado $bought', style: const TextStyle(color: WishlyTokens.onInkMuted, decoration: TextDecoration.lineThrough)),
+                ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
-            child: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
-          ),
-          if (widget.onMembers != null)
-            TextButton.icon(
-              onPressed: widget.onMembers,
-              icon: const Icon(Icons.group_outlined, color: QueroColors.cream, size: WishlyIcon.lg),
-              label: const Text('Membros', style: TextStyle(color: QueroColors.cream)),
-            ),
-          const SizedBox(height: WishlySpace.s2),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
-            child: Row(
-              children: [
-                const Expanded(child: Text('LISTAS', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700))),
-                TextButton(onPressed: widget.onCreate, child: const Text('Nova lista', style: TextStyle(color: QueroColors.accent))),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              children: [
-                for (final list in widget.lists)
-                  ListTile(
-                    selected: list.id == widget.currentId,
-                    selectedTileColor: WishlyTokens.inkRaised,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.lg)),
-                    title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: list.id == widget.currentId ? WishlyColor.white : QueroColors.cream, fontWeight: FontWeight.w700)),
-                    subtitle: list.collaborative
-                        ? Row(
-                            children: [
-                              MemberAvatars(members: list.members, onDark: true),
-                              const SizedBox(width: WishlySpace.s2),
-                              const SharedBadge(onDark: true),
-                            ],
-                          )
-                        : null,
-                    isThreeLine: list.collaborative,
-                    trailing: Text('${list.itemCount}', style: const TextStyle(color: WishlyTokens.onInk)),
-                    onTap: () => widget.onSelect(list),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: WishlySpace.s3),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: WishlySpace.s2),
-            child: Text('FALTA COMPRAR', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs, letterSpacing: WishlyText.tracking, fontWeight: FontWeight.w700)),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2, vertical: WishlySpace.s2),
-            child: Text(total, style: fraunces(WishlyText.xl3, color: QueroColors.cream)),
-          ),
-          if (bought != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: WishlySpace.s2),
-              child: Text('Já comprado $bought', style: const TextStyle(color: WishlyTokens.onInkMuted, decoration: TextDecoration.lineThrough)),
-          ),
-          _accountButton(),
-        ],
-      ),
+        ),
+        const Divider(height: 1, color: WishlyTokens.inkLine),
+        const AccountBar(),
+      ],
     );
   }
 
-  Widget _accountButton({bool compact = false}) {
+  Widget _railAccount() {
     final session = SessionScope.of(context);
     final user = session.user;
     if (user == null) return const SizedBox.shrink();
-    final avatar = WishlyAvatar(
-      label: user.name,
-      userId: user.id,
-      hasAvatar: user.hasAvatar,
-      version: user.avatarAt,
-      api: session.api,
-      radius: compact ? 16 : 18,
-    );
-    return Padding(
-      padding: const EdgeInsets.only(top: WishlySpace.s3),
-      child: InkWell(
-        onTap: () => Navigator.of(context).pushNamed('/configuracoes'),
-        borderRadius: BorderRadius.circular(WishlyRadius.lg),
-        child: compact
-            ? avatar
-            : Row(
-                children: [
-                  avatar,
-                  const SizedBox(width: WishlySpace.s3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: QueroColors.cream, fontWeight: FontWeight.w700)),
-                        const Text('Configurações', style: TextStyle(color: WishlyTokens.onInkMuted, fontSize: WishlyText.xs)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+    return IconButton(
+      tooltip: 'Configurações',
+      onPressed: () => openSettings(context),
+      icon: WishlyAvatar(
+        label: user.name,
+        userId: user.id,
+        hasAvatar: user.hasAvatar,
+        version: user.avatarAt,
+        api: session.api,
+        radius: 16,
       ),
     );
   }

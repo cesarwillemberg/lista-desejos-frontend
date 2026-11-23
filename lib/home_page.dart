@@ -12,7 +12,7 @@ import 'theme.dart';
 import 'grouped_items.dart';
 import 'list_sidebar.dart';
 import 'members_dialog.dart';
-import 'widgets/avatar.dart';
+import 'widgets/account_menu.dart';
 import 'widgets/item_form.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/item_card.dart';
@@ -861,40 +861,16 @@ class _Board extends StatelessWidget {
                       onDeleteList?.call();
                     case 'refresh':
                       onReload();
+                    case 'account':
                     case 'settings':
-                      Navigator.of(context).pushNamed('/configuracoes');
+                      openSettings(context);
                     default:
                       break;
                   }
                 },
                 itemBuilder: (context) {
-                  final user = SessionScope.of(context).user;
                   return [
-                  PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
-                      children: [
-                        WishlyAvatar(
-                          label: user?.name ?? 'Conta',
-                          userId: user?.id,
-                          hasAvatar: user?.hasAvatar ?? false,
-                          version: user?.avatarAt,
-                          api: SessionScope.of(context).api,
-                          radius: 14,
-                        ),
-                        const SizedBox(width: WishlySpace.s3),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(user?.name ?? 'Conta', maxLines: 1, overflow: TextOverflow.ellipsis),
-                              Text('Configurações', style: TextStyle(color: context.wishlyMuted, fontSize: WishlyText.xs)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ...accountMenuEntries(context),
                   if (onMembers != null) const PopupMenuItem(value: 'members', child: Text('Membros')),
                   if (onCategories != null) const PopupMenuItem(value: 'categories', child: Text('Categorias')),
                   if (onRenameList != null) const PopupMenuItem(value: 'rename', child: Text('Renomear lista')),

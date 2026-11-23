@@ -157,7 +157,7 @@ abstract final class WishlySize {
   static const chipRow = 44.0;
   static const headerExtra = 92.0;
   static const collapsedStart = 56.0;
-  static const collapsedEnd = 104.0;
+  static const collapsedEnd = 168.0;
   static const avatar = 28.0;
   static const avatarRadius = 13.0;
   static const avatarOverlap = 0.72;

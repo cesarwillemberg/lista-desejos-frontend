@@ -6,6 +6,7 @@ import 'money.dart';
 import 'install.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'widgets/account_menu.dart';
 import 'widgets/avatar.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/member_avatars.dart';
@@ -128,6 +129,8 @@ class _ListsPageState extends State<ListsPage> {
   @override
   Widget build(BuildContext context) {
     final email = SessionScope.of(context).user?.email ?? '';
+    final name = SessionScope.of(context).user?.name ?? email;
+    final narrow = MediaQuery.sizeOf(context).width < WishlyBreak.sm;
     return Scaffold(
       backgroundColor: context.wishlyPaper,
       body: Column(
@@ -137,16 +140,16 @@ class _ListsPageState extends State<ListsPage> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(WishlySpace.s6, WishlySpace.s5, WishlySpace.s2, WishlySpace.s5),
+                padding: const EdgeInsets.fromLTRB(WishlySpace.s4, WishlySpace.s4, WishlySpace.s2, WishlySpace.s4),
                 child: Row(
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => Navigator.of(context).pushNamed('/configuracoes'),
+                        onTap: () => openSettings(context),
                         child: Row(
                           children: [
                             WishlyAvatar(
-                              label: SessionScope.of(context).user?.name ?? email,
+                              label: name,
                               userId: SessionScope.of(context).user?.id,
                               hasAvatar: SessionScope.of(context).user?.hasAvatar ?? false,
                               version: SessionScope.of(context).user?.avatarAt,
@@ -158,8 +161,8 @@ class _ListsPageState extends State<ListsPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Wishly', style: fraunces(WishlyText.xl3, style: FontStyle.italic, color: QueroColors.cream)),
-                                  Text(SessionScope.of(context).user?.name ?? email, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.sm)),
+                                  Text(narrow ? name : 'Wishly', maxLines: 1, overflow: TextOverflow.ellipsis, style: fraunces(narrow ? WishlyText.xl : WishlyText.xl3, style: narrow ? FontStyle.normal : FontStyle.italic, color: QueroColors.cream)),
+                                  Text(narrow ? 'Configurações' : name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: WishlyTokens.onInk, fontSize: WishlyText.sm, fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),
@@ -177,7 +180,24 @@ class _ListsPageState extends State<ListsPage> {
                         PopupMenuItem(value: ThemeMode.dark, child: Text('Escuro')),
                       ],
                     ),
-                    TextButton(onPressed: _logout, child: const Text('Sair', style: TextStyle(color: QueroColors.cream))),
+                    if (narrow)
+                      PopupMenuButton<String>(
+                        tooltip: 'Mais',
+                        icon: const Icon(Icons.more_vert, color: QueroColors.cream),
+                        onSelected: (value) {
+                          if (value == 'logout') {
+                            _logout();
+                          } else {
+                            openSettings(context);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          ...accountMenuEntries(context),
+                          const PopupMenuItem(value: 'logout', child: Text('Sair')),
+                        ],
+                      )
+                    else
+                      TextButton(onPressed: _logout, child: const Text('Sair', style: TextStyle(color: QueroColors.cream))),
                   ],
                 ),
               ),
@@ -191,8 +211,8 @@ class _ListsPageState extends State<ListsPage> {
                 children: [
                   Row(
                     children: [
-                      Text('Suas listas', style: fraunces(WishlyText.xl3)),
-                      const Spacer(),
+                      Expanded(child: Text('Suas listas', style: fraunces(WishlyText.xl3))),
+                      if (!narrow)
                       TextButton(
                         onPressed: () {
                           if (canInstallApp()) {
@@ -224,6 +244,7 @@ class _ListsPageState extends State<ListsPage> {
               ),
             ),
           ),
+          if (narrow) const AccountBar(padForSafeArea: true),
         ],
       ),
     );
