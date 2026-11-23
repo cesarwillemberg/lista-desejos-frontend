@@ -28,6 +28,10 @@ class _ListsPageState extends State<ListsPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final account = SessionScope.of(context).user;
+    if (account != null) {
+      _lists = [for (final list in _lists) list.withMemberLabel(account.id, account.name)];
+    }
     if (_started) return;
     _started = true;
     _load();

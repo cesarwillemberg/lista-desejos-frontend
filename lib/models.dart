@@ -115,6 +115,56 @@ class WishItem {
     );
   }
 
+  WishItem withPerson(String userId, String name) {
+    final added = addedById == userId && addedByLabel != name;
+    final reservedBy = reservedById == userId && reservedLabel != name;
+    if (!added && !reservedBy) return this;
+    return copyLabels(
+      addedByLabel: added ? name : addedByLabel,
+      reservedLabel: reservedBy ? name : reservedLabel,
+    );
+  }
+
+  WishItem copyLabels({String? addedByLabel, String? reservedLabel}) {
+    return WishItem(
+      id: id,
+      name: name,
+      url: url,
+      status: status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      imageUrl: imageUrl,
+      price: price,
+      currency: currency,
+      store: store,
+      message: message,
+      listId: listId,
+      categoryId: categoryId,
+      reserved: reserved,
+      reservedLabel: reservedLabel ?? this.reservedLabel,
+      reservedByMe: reservedByMe,
+      addedByLabel: addedByLabel ?? this.addedByLabel,
+      addedById: addedById,
+      addedByHasAvatar: addedByHasAvatar,
+      addedByAvatarAt: addedByAvatarAt,
+      reservedById: reservedById,
+      reservedByHasAvatar: reservedByHasAvatar,
+      reservedByAvatarAt: reservedByAvatarAt,
+      purchased: purchased,
+      purchasedAt: purchasedAt,
+      purchasedByLabel: purchasedByLabel,
+      priority: priority,
+      priceDrop: priceDrop,
+      history: history,
+      position: position,
+      note: note,
+      colorName: colorName,
+      sizeLabel: sizeLabel,
+      voltage: voltage,
+      quantity: quantity,
+    );
+  }
+
   factory WishItem.fromJson(Map<String, dynamic> json) {
     return WishItem(
       id: json['id'] as String,
@@ -297,6 +347,19 @@ class ListMember {
       avatarAt: json['avatar_at'] as String?,
     );
   }
+
+  ListMember named(String next) {
+    if (label == next) return this;
+    return ListMember(
+      userId: userId,
+      email: email,
+      label: next,
+      initials: initials,
+      role: role,
+      hasAvatar: hasAvatar,
+      avatarAt: avatarAt,
+    );
+  }
 }
 
 String roleLabel(String role) {
@@ -357,6 +420,41 @@ class WishList {
 
   bool get canEdit => role != 'viewer';
   bool get isOwner => role == 'owner';
+
+  WishList withMemberLabel(String userId, String label) {
+    var changed = false;
+    final next = <ListMember>[];
+    for (final member in members) {
+      if (member.userId == userId && member.label != label) {
+        changed = true;
+        next.add(member.named(label));
+      } else {
+        next.add(member);
+      }
+    }
+    if (!changed) return this;
+    return WishList(
+      id: id,
+      name: name,
+      itemCount: itemCount,
+      unpricedCount: unpricedCount,
+      totals: totals,
+      shareToken: shareToken,
+      sharePath: sharePath,
+      shortCode: shortCode,
+      shortUrl: shortUrl,
+      role: role,
+      collaborative: collaborative,
+      members: next,
+      inviteEditorUrl: inviteEditorUrl,
+      inviteViewerUrl: inviteViewerUrl,
+      purchasedTotals: purchasedTotals,
+      budget: budget,
+      budgetCurrency: budgetCurrency,
+      showReservations: showReservations,
+      reservationsEnabled: reservationsEnabled,
+    );
+  }
 
   factory WishList.fromJson(Map<String, dynamic> json) {
     final rawTotals = json['totals'];

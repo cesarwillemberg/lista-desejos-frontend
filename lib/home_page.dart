@@ -70,10 +70,19 @@ class _ListDetailPageState extends State<ListDetailPage> with WidgetsBindingObse
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncPersonLabels();
     if (_started) return;
     _started = true;
     _loadSort();
     _load();
+  }
+
+  void _syncPersonLabels() {
+    final account = SessionScope.of(context).user;
+    if (account == null) return;
+    _allLists = [for (final list in _allLists) list.withMemberLabel(account.id, account.name)];
+    _list = _list?.withMemberLabel(account.id, account.name);
+    _items = [for (final item in _items) item.withPerson(account.id, account.name)];
   }
 
   Future<void> _loadSort() async {

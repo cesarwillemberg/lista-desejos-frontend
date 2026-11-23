@@ -30,6 +30,9 @@ class _MembersDialogState extends State<MembersDialog> {
   void initState() {
     super.initState();
     _list = widget.list;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _refreshList();
+    });
   }
 
   @override
@@ -53,14 +56,22 @@ class _MembersDialogState extends State<MembersDialog> {
   }
 
   Future<void> _refreshList() async {
-    final snapshot = await widget.api.listItems(_list.id);
-    if (!mounted || snapshot.list == null) return;
-    setState(() => _list = snapshot.list!);
+    try {
+      final snapshot = await widget.api.listItems(_list.id);
+      if (!mounted || snapshot.list == null) return;
+      setState(() => _list = snapshot.list!);
+    } on ApiException {
+      // Keep the names already on screen if the refresh fails.
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userId = SessionScope.of(context).user?.id;
+    final account = SessionScope.of(context).user;
+    final userId = account?.id;
+    final members = account == null
+        ? _list.members
+        : [for (final member in _list.members) member.userId == account.id ? member.named(account.name) : member];
     return Dialog(
       backgroundColor: context.wishlyPaper,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(WishlyRadius.xl2)),
@@ -79,12 +90,12 @@ class _MembersDialogState extends State<MembersDialog> {
               ),
               Text('Colaborar em ${_list.name}', style: TextStyle(color: context.wishlyMuted)),
               const SizedBox(height: WishlySpace.s3),
-              MemberAvatars(members: _list.members),
+              MemberAvatars(members: members),
               const SizedBox(height: WishlySpace.s2),
               Expanded(
                 child: ListView(
                   children: [
-                    for (final member in _list.members) _memberTile(member, userId),
+                    for (final member in members) _memberTile(member, userId),
                     if (_list.isOwner) ...[
                       const SizedBox(height: WishlySpace.s2),
                       Text('Convidar', style: fraunces(WishlyText.xl)),

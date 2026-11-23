@@ -120,6 +120,10 @@ class Session extends ChangeNotifier {
       api.token = token;
       await tokens.write(token);
     }
+    final cached = listsCache;
+    if (cached != null) {
+      listsCache = [for (final list in cached) list.withMemberLabel(account.id, account.name)];
+    }
     notifyListeners();
   }
 
